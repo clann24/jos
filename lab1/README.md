@@ -22,7 +22,7 @@ Installing qemu
 ---
 
 ```shell
-./configure --prefix=/usr/local/OS --target-list="i386-softmmu" --disable-kvm --disable-sdl
+./configure --target-list="i386-softmmu" --disable-kvm --disable-sdl
 make
 make install
 ```

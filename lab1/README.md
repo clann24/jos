@@ -1,20 +1,14 @@
-A First Level Header
+Report for lab1
 ====================
 
-A Second Level Header
+Installing gcc in Mac OS X
 ---------------------
+Using brew to install gmp, mpfr, libmpc before configuring gcc:
+  brew install gmp
+  brew install mpfr
+  brew install libmpc
+build outside of the source tree of gcc:
+  mkdir build 
+  cd build
+  ../configure --target=i386-jos-elf --disable-nls --without-headers --with-newlib --disable-threads --disable-shared --disable-libmudflap --disable-libssp
 
-Now is the time for all good men to come to
-the aid of their country. This is just a
-regular paragraph.
-
-The quick brown fox jumped over the lazy
-dog's back.
-
-### Header 3
-
-> This is a blockquote.
-> 
-> This is the second paragraph in the blockquote.
->
-> ## This is an H2 in a blockquote

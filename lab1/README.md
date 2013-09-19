@@ -3,15 +3,14 @@ Report for lab1
 
 Installing gcc in Mac OS X
 ---------------------
-
-Using brew to install gmp, mpfr, libmpc before configuring gcc:
+Use brew to install gmp, mpfr, libmpc before configuring gcc:
 ```shell
 brew install gmp
 brew install mpfr
 brew install libmpc
 ```
 
-build outside of the source tree of gcc:
+Build gcc outside of the source tree:
 ```shell
 mkdir build 
 cd build

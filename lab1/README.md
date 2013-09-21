@@ -102,7 +102,7 @@ Since the last instruction the boot loader executed is
 
 >How does the boot loader decide how many sectors it must read in order to fetch the entire kernel from disk? Where does it find this information?
 
-
+![Alt text](assets/elf.png)
 
 
 

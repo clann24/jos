@@ -28,7 +28,10 @@ make install
 
 Configuring JOS
 ---
-Append the following line to `conf/env.mk`: `QEMU=/usr/local/bin/qemu-system-x86_64`
+Append the following line to `conf/env.mk`: 
+```
+QEMU=/usr/local/bin/qemu-system-x86_64
+```
 
 Then type `make` and `make qemu`
 
@@ -102,10 +105,21 @@ Since the last instruction the boot loader executed is
 
 >How does the boot loader decide how many sectors it must read in order to fetch the entire kernel from disk? Where does it find this information?
 
-![Alt text](assets/elf.png)
+The boot loader reads the number the `pragram header`s in the `ELF header` and loads them all:
+```c
+  ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);
+  eph = ph + ELFHDR->e_phnum;
+  for (; ph < eph; ph++)
+    readseg(ph->p_pa, ph->p_memsz, ph->p_offset);
+```
+![elf](assets/elf.png)
 
+Exercise 5. 
+---
 
-
+So what's the difference between link address and load address?
+See [Linking vs loading](http://www.iecc.com/linker/linker01.html):
+>Linkers and loaders now divided up the work, with linkers doing part of the address binding, assigning relative addresses within each program, and the loader doing a final relocation step to assign actual addresses.
 
 
 

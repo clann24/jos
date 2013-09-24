@@ -1,0 +1,1 @@
+int MIGHTY_ME;

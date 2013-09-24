@@ -229,15 +229,145 @@ relocated:
 qemu: fatal: Trying to execute code outside RAM or ROM at 0x00000000f010002c
 ```
 
+Exercise 8. 
+---
+
+>Q: We have omitted a small fragment of code - the code necessary to print octal numbers using patterns of the form "%o". Find and fill in this code fragment.
+
+Replace the original code:
+```c
+    // (unsigned) octal
+    case 'o':
+      // Replace this with your code.
+      putch('X', putdat);
+      putch('X', putdat);
+      putch('X', putdat);
+      break;
+```
+with:
+```c
+    case 'o':
+      num = getuint(&ap, lflag);
+      base = 8;
+      goto number;
+```
+
+Be able to answer the following questions:
+
+>Q: Explain the interface between printf.c and console.c. Specifically, what function does console.c export? How is this function used by printf.c?
+
+`console.c` exports `cputchar` `getchar` `iscons`, while `cputchar` is used as a parameter when `printf.c` calls `vprintfmt` in `printfmt.c`.
+
+>Q: Explain the following from console.c:
+```c
+     if (crt_pos >= CRT_SIZE) {
+              int i;
+              memcpy(crt_buf, crt_buf + CRT_COLS, (CRT_SIZE - CRT_COLS) * sizeof(uint16_t));
+              for (i = CRT_SIZE - CRT_COLS; i < CRT_SIZE; i++)
+                      crt_buf[i] = 0x0700 | ' ';
+              crt_pos -= CRT_COLS;
+      }
+```
+When the screen is full, scroll down one row to show newer infomation.
+
+>Q: For the following questions you might wish to consult the notes for Lecture 2. These notes cover GCC's calling convention on the x86.
+Trace the execution of the following code step-by-step:
+```c
+int x = 1, y = 3, z = 4;
+cprintf("x %d, y %x, z %d\n", x, y, z);
+```
+>In the call to cprintf(), to what does fmt point? To what does ap point?
+
+In the call to cprintf(), `fmt` point to the format string of its arguments, `ap` points to the variable arguments after `fmt`.
+
+>List (in order of execution) each call to cons_putc, va_arg, and vcprintf. For cons_putc, list its argument as well. For va_arg, list what ap points to before and after the call. For vcprintf list the values of its two arguments.
+
+I modified the `monitor.c` to execute these instructions:
+```c
+void
+monitor(struct Trapframe *tf)
+{
+  char *buf;
+
+  cprintf("Welcome to the JOS kernel monitor!\n");
+  cprintf("Type 'help' for a list of commands.\n");
+  int x = 1, y = 3, z = 4;//inserted
+  cprintf("x %d, y %x, z %d\n", x, y, z);//inserted
+```
+and by using gdb I got the following information:
+```
+cprintf (fmt=0xf0101ad2 "x %d, y %x, z %d\n") 
+vcprintf (fmt=0xf0101ad2 "x %d, y %x, z %d\n", ap=0xf0115f64 "\001")
+cons_putc (c=120)
+cons_putc (c=32)
+va_arg(*ap, int)
+Hardware watchpoint 4: ap
+Old value = 0xf0115f64 "\001"
+New value = 0xf0115f68 "\003"
+cons_putc (c=49)
+cons_putc (c=44)
+cons_putc (c=32)
+cons_putc (c=121)
+cons_putc (c=32)
+va_arg(*ap, int)
+Hardware watchpoint 4: ap
+Old value = 0xf0115f68 "\003"
+New value = 0xf0115f6c "\004"
+cons_putc (c=51)
+cons_putc (c=44)
+cons_putc (c=32)
+cons_putc (c=122)
+cons_putc (c=32)
+va_arg(*ap, int)
+Hardware watchpoint 4: ap
+Old value = 0xf0115f6c "\004"
+New value = 0xf0115f70 "T\034\020?\214_\021??\027\020??_\021??\027\020?_\021?_\021?" #only its value 0xf0115f70 makes sense
+cons_putc (c=52)
+cons_putc (c=10)
+```
 
 
+>Q: Run the following code.
+```c
+    unsigned int i = 0x00646c72;
+    cprintf("H%x Wo%s", 57616, &i);
+```
+>What is the output? Explain how this output is arrived at in the step-by-step manner of the previous exercise. 
+
+The output is `He110 World`, because `57616=0xe110`, so the first half of output is `He110`, `i=0x00646c72` is treated as a string, so it will be printed as `'r'=(char)0x72` `'l'=(char)0x6c` `'d'=(char)0x64`, and `0x00` is treated as a mark of end of string.
+
+>The output depends on that fact that the x86 is little-endian. If the x86 were instead big-endian what would you set i to in order to yield the same output? Would you need to change 57616 to a different value?
+
+We will see `He110, Wo` in a big-endian machine, we don't have to change 57616 because only it's numeric value matters when being printed.
 
 
+>Q: In the following code, what is going to be printed after 'y='? (note: the answer is not a specific value.) Why does this happen?
+```c
+    cprintf("x=%d y=%d", 3);
+```
+It will be the decimal value of the 4 bytes right above where `3` is placed in the stack.
 
 
+>Q: Let's say that GCC changed its calling convention so that it pushed arguments on the stack in declaration order, so that the last argument is pushed last. How would you have to change cprintf or its interface so that it would still be possible to pass it a variable number of arguments?
 
+Push an integer after the last argument indicating the number of arguments.
 
+>Challenge: Enhance the console to allow text to be printed in different colors. The traditional way to do this is to make it interpret ANSI escape sequences embedded in the text strings printed to the console, but you may use any mechanism you like. There is plenty of information on the 6.828 reference page and elsewhere on the web on programming the VGA display hardware. If you're feeling really adventurous, you could try switching the VGA hardware into a graphics mode and making the console draw text onto the graphical frame buffer.
 
+After inspecting the `console.c`, the following codes were found:
+```c
+static void
+cga_putc(int c)
+{
+  // if no attribute given, then use black on white
+  if (!(c & ~0xFF))
+    c |= 0x0700;
+  ...
+```
+and the following description is found in wikipedia:
+>Standard text modes: 80×25 characters in up to 16 colors. Each character is again an 8×8 dot pattern (the same character set is used as for 40×25), in a pixel aspect ratio of 1:2.4. The effective screen resolution of this mode is 640×200 pixels.
+
+So it's reasonable to 
 
 
 

@@ -1,0 +1,1 @@
+   -O1 -fno-builtin -I. -MD -fno-omit-frame-pointer -Wall -Wno-format -Wno-unused -Werror -gstabs -m32 -fno-stack-protector -DJOS_KERNEL -gstabs

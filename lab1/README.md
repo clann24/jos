@@ -354,21 +354,64 @@ Push an integer after the last argument indicating the number of arguments.
 
 >Challenge: Enhance the console to allow text to be printed in different colors. The traditional way to do this is to make it interpret ANSI escape sequences embedded in the text strings printed to the console, but you may use any mechanism you like. There is plenty of information on the 6.828 reference page and elsewhere on the web on programming the VGA display hardware. If you're feeling really adventurous, you could try switching the VGA hardware into a graphics mode and making the console draw text onto the graphical frame buffer.
 
-After inspecting the `console.c`, the following codes were found:
+I use a `%m` to indicate a color change with a corresponding `int` to indicate the color, for example
+`cprintf("%m%s\n%m%s\n%m%s\n", 0x0100, "blue", 0x0200, "green", 0x0400, "red");`
+
+The `monitor.c` is modified as following for testing:
+```c
+void
+monitor(struct Trapframe *tf)
+{
+  char *buf;
+
+  cprintf("Welcome to the JOS kernel monitor!\n");
+  cprintf("Type 'help' for a list of commands.\n");
+  cprintf("%m%s\n%m%s\n%m%s\n", 
+    0x0100, "blue", 0x0200, "green", 0x0400, "red");
+  ...
+}
+```
+and it prints:
+![ch1](assets/ch1.png)
+
+A header file `csa.h` is added in the `inc/` folder, it defines a global var `csa`.
+In the `console.c`, `cga_putc` was modified as following:
 ```c
 static void
 cga_putc(int c)
 {
   // if no attribute given, then use black on white
+  if (!csa) csa = 0x0700;
   if (!(c & ~0xFF))
-    c |= 0x0700;
+    c |= csa;
   ...
 ```
-and the following description is found in wikipedia:
->Standard text modes: 80×25 characters in up to 16 colors. Each character is again an 8×8 dot pattern (the same character set is used as for 40×25), in a pixel aspect ratio of 1:2.4. The effective screen resolution of this mode is 640×200 pixels.
-
-So it's reasonable to 
-
-
+In the `printfmt.c`, the following code is changed as following:
+```c
+void
+vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
+{
+  ...
+  while (1) {
+    while ((ch = *(unsigned char *) fmt++) != '%') {
+      if (ch == '\0') {
+        csa = 0x0700; //change color back
+        return;
+      }
+      putch(ch, putdat);
+    }
+  ...
+  switch (ch = *(unsigned char *) fmt++) {
+    ...
+    case 'm': //change color
+      num = getint(&ap, lflag);
+      csa = num;
+      break;
+    ...
+    }
+  }
+}
+```
+And of course, `csa.h` is included by who need it.
 
 

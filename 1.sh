@@ -1,3 +1,3 @@
 git add .
-git commit -m "lab1 modified"
+git commit -a -m "lab1 modified"
 

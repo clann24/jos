@@ -1,1 +1,0 @@
-int MIGHTY_ME;

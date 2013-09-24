@@ -414,4 +414,195 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 ```
 And of course, `csa.h` is included by who need it.
 
+Exercise 9
+---
+>Q: Determine where the kernel initializes its stack, and exactly where in memory its stack is located. 
+
+In the `entry.S`:
+```asm
+  # Clear the frame pointer register (EBP)
+  # so that once we get into debugging C code,
+  # stack backtraces will be terminated properly.
+  movl  $0x0,%ebp     # nuke frame pointer
+
+  # Set the stack pointer
+  movl  $(bootstacktop),%esp
+```
+In the `kernel.asm`:
+```asm
+  # Clear the frame pointer register (EBP)
+  # so that once we get into debugging C code,
+  # stack backtraces will be terminated properly.
+  movl  $0x0,%ebp     # nuke frame pointer
+f010002f: bd 00 00 00 00        mov    $0x0,%ebp
+
+  # Set the stack pointer
+  movl  $(bootsmdtacktop),%esp
+f0100034: bc 00 60 11 f0        mov    $0xf0116000,%esp
+```
+So the kernel stack starts at `0xf0116000`.
+
+> How does the kernel reserve space for its stack? And at which "end" of this reserved area is the stack pointer initialized to point to?
+
+In the `entry.S`:
+```asm
+.data
+###################################################################
+# boot stack
+###################################################################
+  .p2align  PGSHIFT   # force page alignment
+  .globl    bootstack
+bootstack:
+  .space    KSTKSIZE
+  .globl    bootstacktop   
+bootstacktop:
+```
+Exercise 10
+---
+>To become familiar with the C calling conventions on the x86, find the address of the test_backtrace function in obj/kern/kernel.asm, set a breakpoint there, and examine what happens each time it gets called after the kernel starts. How many 32-bit words does each recursive nesting level of test_backtrace push on the stack, and what are those words?
+
+In the `kernel.asm`:
+```asm
+// Test the stack backtrace function (lab 1 only)
+void
+test_backtrace(int x)
+{
+f0100040: 55                    push   %ebp
+f0100041: 89 e5                 mov    %esp,%ebp
+f0100043: 53                    push   %ebx
+f0100044: 83 ec 0c              sub    $0xc,%esp
+f0100047: 8b 5d 08              mov    0x8(%ebp),%ebx
+  cprintf("entering test_backtrace %d\n", x);
+f010004a: 53                    push   %ebx
+f010004b: 68 20 18 10 f0        push   $0xf0101820
+f0100050: e8 7c 08 00 00        call   f01008d1 <cprintf>
+  if (x > 0)
+f0100055: 83 c4 10              add    $0x10,%esp
+f0100058: 85 db                 test   %ebx,%ebx
+f010005a: 7e 11                 jle    f010006d <test_backtrace+0x2d>
+    test_backtrace(x-1);
+f010005c: 83 ec 0c              sub    $0xc,%esp
+f010005f: 8d 43 ff              lea    -0x1(%ebx),%eax
+f0100062: 50                    push   %eax
+f0100063: e8 d8 ff ff ff        call   f0100040 <test_backtrace>
+f0100068: 83 c4 10              add    $0x10,%esp
+f010006b: eb 11                 jmp    f010007e <test_backtrace+0x3e>
+  else
+    mon_backtrace(0, 0, 0);
+f010006d: 83 ec 04              sub    $0x4,%esp
+f0100070: 6a 00                 push   $0x0
+f0100072: 6a 00                 push   $0x0
+f0100074: 6a 00                 push   $0x0
+f0100076: e8 aa 06 00 00        call   f0100725 <mon_backtrace>
+f010007b: 83 c4 10              add    $0x10,%esp
+  cprintf("leaving test_backtrace %d\n", x);
+f010007e: 83 ec 08              sub    $0x8,%esp
+f0100081: 53                    push   %ebx
+f0100082: 68 3c 18 10 f0        push   $0xf010183c
+f0100087: e8 45 08 00 00        call   f01008d1 <cprintf>
+f010008c: 83 c4 10              add    $0x10,%esp
+}
+f010008f: 8b 5d fc              mov    -0x4(%ebp),%ebx
+f0100092: c9                    leave  
+f0100093: c3                    ret    
+```
+Find the answer using `gdb`:
+```
++ symbol-file obj/kern/kernel
+(gdb) b *0xf0100040
+Breakpoint 1 at 0xf0100040: file kern/init.c, line 13.
+(gdb) c
+Continuing.
+The target architecture is assumed to be i386
+0xf0100040 <test_backtrace>:  push   %ebp
+
+Breakpoint 1, test_backtrace (x=5) at kern/init.c:13
+13  {
+(gdb) i r
+eax            0x0  0
+ecx            0x3d4  980
+edx            0x3d5  981
+ebx            0x10074  65652
+esp            0xf0115fdc 0xf0115fdc
+ebp            0xf0115ff8 0xf0115ff8
+esi            0x10074  65652
+edi            0x0  0
+eip            0xf0100040 0xf0100040 <test_backtrace>
+eflags         0x46 [ PF ZF ]
+cs             0x8  8
+ss             0x10 16
+ds             0x10 16
+es             0x10 16
+fs             0x10 16
+gs             0x10 16
+(gdb) c
+Continuing.
+0xf0100040 <test_backtrace>:  push   %ebp
+
+Breakpoint 1, test_backtrace (x=4) at kern/init.c:13
+13  {
+(gdb) i r
+eax            0x4  4
+ecx            0x3d4  980
+edx            0x3d5  981
+ebx            0x5  5
+esp            0xf0115fbc 0xf0115fbc
+ebp            0xf0115fd8 0xf0115fd8
+esi            0x10074  65652
+edi            0x0  0
+eip            0xf0100040 0xf0100040 <test_backtrace>
+eflags         0x92 [ AF SF ]
+cs             0x8  8
+ss             0x10 16
+ds             0x10 16
+es             0x10 16
+fs             0x10 16
+gs             0x10 16
+(gdb) 
+```
+The difference of `ebp` between the two breakpoints is `0x20`, so every time it pushes 8 4-byte words. They are:
+```
+return address
+saved ebp
+saved ebx
+abandoned
+abandoned
+abandoned
+abandoned
+var x for calling next test_backtrace
+```
+
+
+
+```c
+int
+mon_backtrace(int argc, char **argv, struct Trapframe *tf)
+{
+  uint32_t* ebp = (uint32_t*) read_ebp();
+  cprintf("Stack backtrace:\n");
+  while (ebp) {
+    cprintf("ebp %x  eip %x  args", ebp, *(ebp+1));
+    cprintf(" %x", *(ebp+2));
+    cprintf(" %x", *(ebp+3));
+    cprintf(" %x", *(ebp+4));
+    cprintf(" %x", *(ebp+5));
+    cprintf(" %x\n", *(ebp+6));
+    ebp = (uint32_t*) *ebp;
+  //ebp f0109e58  eip f0100a62  args 00000001 f0109e80 f0109e98 f0100ed2 00000031
+  }
+  return 0;
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
 

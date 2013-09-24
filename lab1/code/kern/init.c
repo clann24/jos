@@ -7,6 +7,8 @@
 #include <kern/monitor.h>
 #include <kern/console.h>
 
+int backtrace(int argc, char **argv, struct Trapframe *tf);
+
 // Test the stack backtrace function (lab 1 only)
 void
 test_backtrace(int x)
@@ -15,7 +17,7 @@ test_backtrace(int x)
 	if (x > 0)
 		test_backtrace(x-1);
 	else
-		mon_backtrace(0, 0, 0);
+		backtrace(0, 0, 0);
 	cprintf("leaving test_backtrace %d\n", x);
 }
 

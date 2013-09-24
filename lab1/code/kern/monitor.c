@@ -21,10 +21,13 @@ struct Command {
 	int (*func)(int argc, char** argv, struct Trapframe* tf);
 };
 
+int backtrace(int argc, char **argv, struct Trapframe *tf);
+
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "mon_backtrace", "mon_backtrace", mon_backtrace },
+	{ "backtrace", "backtrace", backtrace },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -74,6 +77,31 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+int
+backtrace(int argc, char **argv, struct Trapframe *tf)
+{
+	uint32_t* ebp = (uint32_t*) read_ebp();
+	cprintf("Stack backtrace:\n");
+	while (ebp) {
+		uint32_t eip = *(ebp+1);
+		cprintf("ebp %x  eip %x  args", ebp, eip);
+		cprintf(" %x", *(ebp+2));
+		cprintf(" %x", *(ebp+3));
+		cprintf(" %x", *(ebp+4));
+		cprintf(" %x", *(ebp+5));
+		cprintf(" %x\n", *(ebp+6));
+		struct Eipdebuginfo* info = NULL;
+		debuginfo_eip(eip, info);
+		if (info == NULL) {
+			cprintf("backtrace error");
+			break;
+		}
+		cprintf(" %x\n", info->eip_fn_narg);
+		ebp = (uint32_t*) *ebp;
+  //ebp f0109e58  eip f0100a62  args 00000001 f0109e80 f0109e98 f0100ed2 00000031
+	}
+	return 0;
+}
 
 
 /***** Kernel monitor command interpreter *****/
@@ -127,8 +155,8 @@ monitor(struct Trapframe *tf)
 
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
-	//cprintf("%m%s\n%m%s\n%m%s\n", 
-		//0x0100, "blue", 0x0200, "green", 0x0400, "red");
+	cprintf("%m%s\n%m%s\n%m%s\n", 
+		0x0100, "blue", 0x0200, "green", 0x0400, "red");
 
 
 	while (1) {

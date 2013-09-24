@@ -572,7 +572,9 @@ abandoned
 var x for calling next test_backtrace
 ```
 
-
+Exercise 11
+---
+>Q: Implement the backtrace function as specified above.
 
 ```c
 int
@@ -593,7 +595,41 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
   return 0;
 }
 ```
+The result is as following:
+```
+***
+*** Use Ctrl-a x to exit qemu
+***
+/usr/local/bin/qemu-system-x86_64 -nographic -hda obj/kern/kernel.img -serial mon:stdio -gdb tcp::25501 -D qemu.log 
+6828 decimal is 15254 octal!
+entering test_backtrace 5
+entering test_backtrace 4
+entering test_backtrace 3
+entering test_backtrace 2
+entering test_backtrace 1
+entering test_backtrace 0
+Stack backtrace:
+ebp f0115f18  eip f010007b  args 0 0 0 0 f01008fc
+ebp f0115f38  eip f0100068  args 0 1 f0115f78 0 f01008fc
+ebp f0115f58  eip f0100068  args 1 2 f0115f98 0 f01008fc
+ebp f0115f78  eip f0100068  args 2 3 f0115fb8 0 f01008fc
+ebp f0115f98  eip f0100068  args 3 4 0 0 0
+ebp f0115fb8  eip f0100068  args 4 5 0 10074 10074
+ebp f0115fd8  eip f01000d4  args 5 1aac 648 0 0
+ebp f0115ff8  eip f010003e  args 117021 0 0 0 0
+leaving test_backtrace 0
+leaving test_backtrace 1
+leaving test_backtrace 2
+leaving test_backtrace 3
+leaving test_backtrace 4
+leaving test_backtrace 5
+Welcome to the JOS kernel monitor!
+Type 'help' for a list of commands.
+K> 
+```
 
+Exercise 12
+---
 
 
 

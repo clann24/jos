@@ -5,6 +5,16 @@ Report for lab1, Shian Chen
 
 >all challenges completed
 
+```
+running JOS: (5.3s)
+  printf: OK
+  backtrace count: OK
+  backtrace arguments: OK
+  backtrace symbols: OK
+  backtrace lines: OK
+Score: 50/50
+```
+
 Installing gcc in Mac OS X
 ---------------------
 Use brew to install glib, gmp, mpfr, libmpc before configuring gcc:

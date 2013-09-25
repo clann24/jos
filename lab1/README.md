@@ -1,7 +1,6 @@
 Report for lab1, Shian Chen
 ===
 
-
 >all exercises finished 
 
 >all questions answered 
@@ -63,7 +62,7 @@ Goto `/usr/local/bin` and find `i386-jos-elf-gdb`
 Use `i386-jos-elf-gdb` rather than `gdb`:
 
 ```shell
-  Clann$ i386-jos-elf-gdb
+$ i386-jos-elf-gdb
 GNU gdb 6.8
 Copyright (C) 2008 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>

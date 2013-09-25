@@ -105,7 +105,13 @@ In `boot.asm`, it's
 >Q: Where is the first instruction of the kernel?
 
 Since the last instruction the boot loader executed is 
-`call *0x10018`, the first instruction of the kernel should be at `0x10018`.
+`call *0x10018`, the first instruction of the kernel should be at `*0x10018`.
+Examine `*0x10018` using `gdb`:
+```
+(gdb) x/1x 0x10018
+0x10018:  0x0010000c
+```
+so the first instruction of the kernel is at `0x0010000c`
 
 
 >Q: How does the boot loader decide how many sectors it must read in order to fetch the entire kernel from disk? Where does it find this information?

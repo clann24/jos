@@ -1,6 +1,12 @@
 LAB1
 ====================
 
+>all exercises finished 
+
+>all questions answered 
+
+>all challenges completed
+
 Installing gcc in Mac OS X
 ---------------------
 Use brew to install glib, gmp, mpfr, libmpc before configuring gcc:
@@ -132,13 +138,13 @@ The target architecture is assumed to be i386
 0x7c36: mov    %eax,%ds
 0x7c38: mov    %eax,%es
 0x7c3a: mov    %eax,%fs
-```   
+``` 
 ```asm
 Wrong:
 [   0:7c2d] 0x7c2d: ljmp   $0x8,$0x7c36
 [f000:e05b] 0xfe05b:  cmpl   $0x0,%cs:0x66d4
 [f000:e062] 0xfe062:  jne    0xfd3da
-[f000:d3da] 0xfd3da:  cli    
+[f000:d3da] 0xfd3da:  cli
 [f000:d3db] 0xfd3db:  cld 
 ```
 
@@ -454,7 +460,7 @@ In the `entry.S`:
   .globl    bootstack
 bootstack:
   .space    KSTKSIZE
-  .globl    bootstacktop   
+  .globl    bootstacktop 
 bootstacktop:
 ```
 Exercise 10
@@ -503,8 +509,8 @@ f0100087: e8 45 08 00 00        call   f01008d1 <cprintf>
 f010008c: 83 c4 10              add    $0x10,%esp
 }
 f010008f: 8b 5d fc              mov    -0x4(%ebp),%ebx
-f0100092: c9                    leave  
-f0100093: c3                    ret    
+f0100092: c9                    leave 
+f0100093: c3                    ret 
 ```
 Find the answer using `gdb`:
 ```
@@ -631,6 +637,104 @@ K>
 Exercise 12
 ---
 
+So what is `STAB (Symbol TABle)`? I found [this](http://www.math.utah.edu/docs/info/stabs_1.html).
+
+Add the following lines to `kdebug.c`:
+```c
+  stab_binsearch(stabs, &lline, &rline, N_SLINE, addr);
+  info->eip_line = lline;
+```
+Add `backtrace` in `monitor.c`:
+```c
+int
+backtrace(int argc, char **argv, struct Trapframe *tf)
+{
+  uint32_t* ebp = (uint32_t*) read_ebp();
+  cprintf("Stack backtrace:\n");
+  while (ebp) {
+    uint32_t eip = ebp[1];
+    cprintf("ebp %x  eip %x  args", ebp, eip);
+    int i;
+    for (i = 2; i <= 6; ++i)
+      cprintf(" %08.x", ebp[i]);
+    cprintf("\n");
+    struct Eipdebuginfo info;
+    debuginfo_eip(eip, &info);
+    cprintf("\t%s:%d: %.*s+%d\n", 
+      info.eip_file, info.eip_line,
+      info.eip_fn_namelen, info.eip_fn_name,
+      eip-info.eip_fn_addr);
+//         kern/monitor.c:143: monitor+106
+    ebp = (uint32_t*) *ebp;
+  }
+  return 0;
+}
+
+```
+and then it works, change the `test_backtrace` in `init.c`:
+```c
+void
+test_backtrace(int x)
+{
+  cprintf("entering test_backtrace %d\n", x);
+  if (x > 0)
+    test_backtrace(x-1);
+  else
+    backtrace(0, 0, 0);
+  cprintf("leaving test_backtrace %d\n", x);
+}
+```
+By running the kernel we get:
+```
+6828 decimal is 15254 octal!
+entering test_backtrace 5
+entering test_backtrace 4
+entering test_backtrace 3
+entering test_backtrace 2
+entering test_backtrace 1
+entering test_backtrace 0
+Stack backtrace:
+ebp f0115f18  eip f010007b  args 00000000 00000000 00000000 00000000 f01009bc
+       kern/init.c:95: test_backtrace+59
+ebp f0115f38  eip f0100068  args 00000000 00000001 f0115f78 00000000 f01009bc
+       kern/init.c:94: test_backtrace+40
+ebp f0115f58  eip f0100068  args 00000001 00000002 f0115f98 00000000 f01009bc
+       kern/init.c:94: test_backtrace+40
+ebp f0115f78  eip f0100068  args 00000002 00000003 f0115fb8 00000000 f01009bc
+       kern/init.c:94: test_backtrace+40
+ebp f0115f98  eip f0100068  args 00000003 00000004 00000000 00000000 00000000
+       kern/init.c:94: test_backtrace+40
+ebp f0115fb8  eip f0100068  args 00000004 00000005 00000000 00010074 00010074
+       kern/init.c:94: test_backtrace+40
+ebp f0115fd8  eip f01000d4  args 00000005 00001aac 00000648 00000000 00000000
+       kern/init.c:104: i386_init+64
+ebp f0115ff8  eip f010003e  args 00117021 00000000 00000000 00000000 00000000
+       kern/entry.S:14: <unknown>+0
+leaving test_backtrace 0
+leaving test_backtrace 1
+leaving test_backtrace 2
+leaving test_backtrace 3
+leaving test_backtrace 4
+leaving test_backtrace 5
+Welcome to the JOS kernel monitor!
+Type 'help' for a list of commands.
+blue
+green
+red
+K> backtrace
+Stack backtrace:
+ebp f0115f68  eip f0100987  args 00000001 f0115f80 00000000 f0115fc8 f0118540
+       kern/monitor.c:525: monitor+289
+ebp f0115fd8  eip f01000e1  args 00000000 00001aac 00000648 00000000 00000000
+       kern/init.c:105: i386_init+77
+ebp f0115ff8  eip f010003e  args 00117021 00000000 00000000 00000000 00000000
+       kern/entry.S:14: <unknown>+0
+```
+
+
+
+This completes the lab.
+=======
 
 
 

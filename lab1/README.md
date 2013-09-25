@@ -1,5 +1,6 @@
-LAB1
-====================
+Report for lab1, Shian Chen
+===
+
 
 >all exercises finished 
 

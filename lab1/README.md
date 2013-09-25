@@ -647,7 +647,7 @@ So what is `STAB (Symbol TABle)`? I found [this](http://www.math.utah.edu/docs/i
 Add the following lines to `kdebug.c`:
 ```c
   stab_binsearch(stabs, &lline, &rline, N_SLINE, addr);
-  info->eip_line = lline;
+	info->eip_line = stabs[lline].n_desc;
 ```
 Add `backtrace` in `monitor.c`:
 ```c
@@ -699,22 +699,22 @@ entering test_backtrace 2
 entering test_backtrace 1
 entering test_backtrace 0
 Stack backtrace:
-ebp f0115f18  eip f010007b  args 00000000 00000000 00000000 00000000 f01009bc
-       kern/init.c:95: test_backtrace+59
-ebp f0115f38  eip f0100068  args 00000000 00000001 f0115f78 00000000 f01009bc
-       kern/init.c:94: test_backtrace+40
-ebp f0115f58  eip f0100068  args 00000001 00000002 f0115f98 00000000 f01009bc
-       kern/init.c:94: test_backtrace+40
-ebp f0115f78  eip f0100068  args 00000002 00000003 f0115fb8 00000000 f01009bc
-       kern/init.c:94: test_backtrace+40
-ebp f0115f98  eip f0100068  args 00000003 00000004 00000000 00000000 00000000
-       kern/init.c:94: test_backtrace+40
-ebp f0115fb8  eip f0100068  args 00000004 00000005 00000000 00010074 00010074
-       kern/init.c:94: test_backtrace+40
-ebp f0115fd8  eip f01000d4  args 00000005 00001aac 00000648 00000000 00000000
-       kern/init.c:104: i386_init+64
-ebp f0115ff8  eip f010003e  args 00117021 00000000 00000000 00000000 00000000
-       kern/entry.S:14: <unknown>+0
+ebp f010ff18  eip f0100087  args 00000000 00000000 00000000 00000000 f0100a8c
+	     kern/init.c:21: test_backtrace+71
+ebp f010ff38  eip f0100069  args 00000000 00000001 f010ff78 00000000 f0100a8c
+	     kern/init.c:18: test_backtrace+41
+ebp f010ff58  eip f0100069  args 00000001 00000002 f010ff98 00000000 f0100a8c
+	     kern/init.c:18: test_backtrace+41
+ebp f010ff78  eip f0100069  args 00000002 00000003 f010ffb8 00000000 f0100a8c
+	     kern/init.c:18: test_backtrace+41
+ebp f010ff98  eip f0100069  args 00000003 00000004 00000000 00000000 00000000
+	     kern/init.c:18: test_backtrace+41
+ebp f010ffb8  eip f0100069  args 00000004 00000005 00000000 00010094 00010094
+	     kern/init.c:18: test_backtrace+41
+ebp f010ffd8  eip f01000ea  args 00000005 00001aac 00000648 00000000 00000000
+	     kern/init.c:45: i386_init+77
+ebp f010fff8  eip f010003e  args 00111021 00000000 00000000 00000000 00000000
+	     kern/entry.S:83: <unknown>+0
 leaving test_backtrace 0
 leaving test_backtrace 1
 leaving test_backtrace 2
@@ -726,14 +726,7 @@ Type 'help' for a list of commands.
 blue
 green
 red
-K> backtrace
-Stack backtrace:
-ebp f0115f68  eip f0100987  args 00000001 f0115f80 00000000 f0115fc8 f0118540
-       kern/monitor.c:525: monitor+289
-ebp f0115fd8  eip f01000e1  args 00000000 00001aac 00000648 00000000 00000000
-       kern/init.c:105: i386_init+77
-ebp f0115ff8  eip f010003e  args 00117021 00000000 00000000 00000000 00000000
-       kern/entry.S:14: <unknown>+0
+K> 
 ```
 
 

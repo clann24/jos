@@ -91,7 +91,7 @@ The `movl %eax, %cr0` causes the switch from 16- to 32-bit mode in the `boot.S`:
 ```
 
 
->Q: What is the last instruction of the boot loader executed, and what is the first instruction of the kernel it just loaded?
+>Q: What is the last instruction of the boot loader executed
 
 In `main.c`, it's
 ```c
@@ -100,6 +100,12 @@ In `main.c`, it's
 In `boot.asm`, it's
 ```asm
     7d63: ff 15 18 00 01 00     call   *0x10018
+```
+
+>Q: and what is the first instruction of the kernel it just loaded?
+It's:
+```
+f010000c: 66 c7 05 72 04 00 00  movw   $0x1234,0x472
 ```
 
 >Q: Where is the first instruction of the kernel?
@@ -116,7 +122,7 @@ so the first instruction of the kernel is at `0x0010000c`
 
 >Q: How does the boot loader decide how many sectors it must read in order to fetch the entire kernel from disk? Where does it find this information?
 
-The boot loader reads the number the `pragram header`s in the `ELF header` and loads them all:
+The boot loader reads the number the `program header`s in the `ELF header` and loads them all:
 ```c
   ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);
   eph = ph + ELFHDR->e_phnum;
@@ -161,30 +167,23 @@ They are all zeros.
 
 >Q: and then again at the point the boot loader enters the kernel
 
-They are the first few fields of an `elf header`:
-```c
-struct Elf {
-  uint32_t e_magic; // must equal ELF_MAGIC
-  uint8_t e_elf[12];
-  uint16_t e_type;
-  uint16_t e_machine;
-  uint32_t e_version;
-  uint32_t e_entry;
-  uint32_t e_phoff;
-  uint32_t e_shoff;
-  uint32_t e_flags;
-  uint16_t e_ehsize;
-  uint16_t e_phentsize;
-  uint16_t e_phnum;
-  uint16_t e_shentsize;
-  uint16_t e_shnum;
-  uint16_t e_shstrndx;
-};
+They are the first few instructions of the kernel:
+
 ```
-```
-(gdb) x/8w 0x10000
-0x10000:  0x464c457f  0x00010101  0x00000000  0x00000000
-0x10010:  0x00030002  0x00000001  0x0010000c  0x00000034
+(gdb) x/8x 0x00100000
+0x100000: 0x1badb002  0x00000000  0xe4524ffe  0x7205c766
+0x100010: 0x34000004  0x6000b812  0x220f0011  0xc0200fd8
+(gdb) x/8i 0x00100000
+0x100000: add    0x1bad(%eax),%dh
+0x100006: add    %al,(%eax)
+0x100008: decb   0x52(%edi)
+0x10000b: in     $0x66,%al
+0x10000d: movl   $0xb81234,0x472
+0x100017: pusha 
+0x100018: adc    %eax,(%eax)
+0x10001a: mov    %eax,%cr3
+(gdb) 
+
 ```
 
 Exercise 7

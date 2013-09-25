@@ -1,8 +1,6 @@
 Report for lab1, Shian Chen
 ===
 
->all exercises finished 
-
 >all questions answered 
 
 >all challenges completed

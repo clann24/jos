@@ -185,7 +185,7 @@ mem_init(void)
 		PTSIZE, 
 		PADDR(pages), 
 		PTE_U);
-
+	cprintf("PADDR(pages) %x\n", PADDR(pages));
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
 	// stack.  The kernel stack grows down from virtual address KSTACKTOP.
@@ -203,6 +203,7 @@ mem_init(void)
 		KSTKSIZE, 
 		PADDR(bootstack), 
 		PTE_W);
+	cprintf("PADDR(bootstack) %x\n", PADDR(bootstack));
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -284,6 +285,7 @@ page_init(void)
 		page_free_list = &pages[i];
 	}
 	int med = (int)ROUNDUP(((char*)pages) + (sizeof(struct PageInfo) * npages) - 0xf0000000, PGSIZE)/PGSIZE;
+	cprintf("pageinfo size: %d\n", sizeof(struct PageInfo));
 	cprintf("%x\n", ((char*)pages) + (sizeof(struct PageInfo) * npages));
 	cprintf("med=%d\n", med);
 	for (i = med; i < npages; i++) {
@@ -399,11 +401,13 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	int i;
+	cprintf("Virtual Address %x mapped to Physical Address %x\n", va, pa);
 	for (i = 0; i < size/PGSIZE; ++i, va += PGSIZE, pa += PGSIZE) {
 		pte_t *pte = pgdir_walk(pgdir, (void *) va, 1);	//create
 		if (!pte) panic("boot_map_region panic, out of memory");
 		*pte = pa | perm | PTE_P;
 	}
+	cprintf("Virtual Address %x mapped to Physical Address %x\n", va, pa);
 }
 
 //
@@ -437,7 +441,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 	pte_t *pte = pgdir_walk(pgdir, va, 1);	//create on demand
 	if (!pte) 	//page table not allocated
 		return -E_NO_MEM;	
-	//increase ref count beforehand to avoid the corner case that pp is freed before it is inserted.
+	//increase ref count to avoid the corner case that pp is freed before it is inserted.
 	pp->pp_ref++;	
 	if (*pte & PTE_P) 	//page colides, tle is invalidated in page_remove
 		page_remove(pgdir, va);

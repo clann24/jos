@@ -278,17 +278,198 @@ KERNBASE, be aware that -KERNBASE is 0x10000000 positive:
 
 Questions
 ---
+>What entries (rows) in the page directory have been filled in at this point? What addresses do they map and where do they point? 
 
+Here's my answer:
+![map](assets/map.jpg)
 
+>We have placed the kernel and user environment in the same address space. Why will user programs not be able to read or write the kernel's memory? What specific mechanisms protect the kernel memory?
+
+Because PTE_U is not enabled.
+
+>What is the maximum amount of physical memory that this operating system can support? Why?
+
+2G, becuase the maximum size of UPAGES is 4MB, `sizeof(struct PageInfo))=8`Byte, 
+so we can have at most `4MB/8B=512K` pages,
+the size of one page is 4KB, so we can have at most `4MB/8B*4KB)=2GB` physical memory.
+
+>How much space overhead is there for managing memory, if we actually had the maximum amount of physical memory? How is this overhead broken down?
+
+We need 4MB `PageInfo`s to manage memory plus 2MB for Page Table
+plus 4KB for Page Directory if we have 2GB physical memory.
+Total:6MB+4KB
+
+>Revisit the page table setup in kern/entry.S and kern/entrypgdir.c. Immediately after we turn on paging, EIP is still a low number (a little over 1MB). At what point do we transition to running at an EIP above KERNBASE? What makes it possible for us to continue executing at a low EIP between when we enable paging and when we begin running at an EIP above KERNBASE? Why is this transition necessary?
+
+After `jmp *%eax` finished. It is possible and necessary because the kernel is linked at `0xf0000000`, so `relocated` is `KERNBASE+previous value`.
+```asm
+	mov	$relocated, %eax
+	jmp	*%eax
+relocated:
+```
 
 Challenges
+===
+
+Challenge
 ---
+```
+Challenge! We consumed many physical pages to hold the page tables for the KERNBASE mapping. Do a more space-efficient job using the PTE_PS ("Page Size") bit in the page directory entries. This bit was not supported in the original 80386, but is supported on more recent x86 processors. You will therefore have to refer to Volume 3 of the current Intel manuals. Make sure you design the kernel to use this optimization only on processors that support it!
+```
+Ouch! It is too difficult to me to reimplement the kernel...
 
+Challenge
+---
+```
+Challenge! Extend the JOS kernel monitor with commands to:
 
+Display in a useful and easy-to-read format all of the physical page mappings (or lack thereof) that apply to a particular range of virtual/linear addresses in the currently active address space. For example, you might enter 'showmappings 0x3000 0x5000' to display the physical page mappings and corresponding permission bits that apply to the pages at virtual addresses 0x3000, 0x4000, and 0x5000.
+Explicitly set, clear, or change the permissions of any mapping in the current address space.
+Dump the contents of a range of memory given either a virtual or physical address range. Be sure the dump code behaves correctly when the range extends across page boundaries!
+Do anything else that you think might be useful later for debugging the kernel. (There's a good chance it will be!)
+```
 
+First, I need a function to translate string to address:
+```c
+uint32_t xtoi(char* buf) {
+	uint32_t res = 0;
+	buf += 2; //0x...
+	while (*buf) { 
+		if (*buf >= 'a') *buf = *buf-'a'+'0'+10;//aha
+		res = res*16 + *buf - '0';
+		++buf;
+	}
+	return res;
+}
+```
+and a function that beautifully prints pte_t:
+```c
+void pprint(pte_t *pte) {
+	cprintf("PTE_P: %x, PTE_W: %x, PTE_U: %x\n", 
+		*pte&PTE_P, *pte&PTE_W, *pte&PTE_U);
+}
+```
 
+Here's my `showmappings`:
+```c
+int
+showmappings(int argc, char **argv, struct Trapframe *tf)
+{
+	if (argc == 1) {
+		cprintf("Usage: showmappings 0xbegin_addr 0xend_addr\n");
+		return 0;
+	}
+	uint32_t begin = xtoi(argv[1]), end = xtoi(argv[2]);
+	cprintf("begin: %x, end: %x\n", begin, end);
+	for (; begin <= end; begin += PGSIZE) {
+		pte_t *pte = pgdir_walk(kern_pgdir, (void *) begin, 1);	//create
+		if (!pte) panic("boot_map_region panic, out of memory");
+		if (*pte & PTE_P) {
+			cprintf("page %x with ", begin);
+			pprint(pte);
+		} else cprintf("page not exist: %x\n", begin);
+	}
+	return 0;
+}
+```
+```
+K> showmappings
+Usage: showmappings 0xbegin_addr 0xend_addr
+K> showmappings 0xf011a000 0xf012a000
+begin: f011a000, end: f012a000
+page f011a000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f011b000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f011c000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f011d000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f011e000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f011f000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f0120000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f0121000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f0122000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f0123000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f0124000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f0125000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f0126000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f0127000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f0128000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f0129000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+page f012a000 with PTE_P: 1, PTE_W: 2, PTE_U: 0
+K> showmappings 0xef000000 0xef010000
+begin: ef000000, end: ef010000
+page ef000000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef001000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef002000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef003000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef004000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef005000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef006000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef007000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef008000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef009000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef00a000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef00b000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef00c000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef00d000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef00e000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef00f000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+page ef010000 with PTE_P: 1, PTE_W: 0, PTE_U: 4
+K> 
+```
 
+Here's my `setm` that can set or clear a flag in a specific page:
+```c
+int setm(int argc, char **argv, struct Trapframe *tf) {
+	if (argc == 1) {
+		cprintf("Usage: setm 0xaddr [0|1 :clear or set] [P|W|U]\n");
+		return 0;
+	}
+	uint32_t addr = xtoi(argv[1]);
+	pte_t *pte = pgdir_walk(kern_pgdir, (void *)addr, 1);
+	cprintf("%x before setm: ", addr);
+	pprint(pte);
+	uint32_t perm = 0;
+	if (argv[3][0] == 'P') perm = PTE_P;
+	if (argv[3][0] == 'W') perm = PTE_W;
+	if (argv[3][0] == 'U') perm = PTE_U;
+	if (argv[2][0] == '0') 	//clear
+		*pte = *pte & ~perm;
+	else 	//set
+		*pte = *pte | perm;
+	cprintf("%x after  setm: ", addr);
+	pprint(pte);
+	return 0;
+}
+```
 
+```
+K> setm 
+Usage: setm 0xaddr [0|1 :clear or set] [P|W|U]
+K> setm 0xf011a000 1 U
+f011a000 before setm: PTE_P: 1, PTE_W: 2, PTE_U: 0
+f011a000 after  setm: PTE_P: 1, PTE_W: 2, PTE_U: 4
+K> setm 0xf011a000 0 U
+f011a000 before setm: PTE_P: 1, PTE_W: 2, PTE_U: 4
+f011a000 after  setm: PTE_P: 1, PTE_W: 2, PTE_U: 0
+K> 
+```
+
+Challenge
+---
+```
+Challenge! Write up an outline of how a kernel could be designed to allow user environments unrestricted use of the full 4GB virtual and linear address space. Hint: the technique is sometimes known as "follow the bouncing kernel." In your design, be sure to address exactly what has to happen when the processor transitions between kernel and user modes, and how the kernel would accomplish such transitions. Also describe how the kernel would access physical memory and I/O devices in this scheme, and how the kernel would access a user environment's virtual address space during system calls and the like. Finally, think about and describe the advantages and disadvantages of such a scheme in terms of flexibility, performance, kernel complexity, and other factors you can think of.
+```
+Well, I have no idea how to do it, maybe I'll know later.
+
+Challenge
+---
+```
+Challenge! Since our JOS kernel's memory management system only allocates and frees memory on page granularity, we do not have anything comparable to a general-purpose malloc/free facility that we can use within the kernel. This could be a problem if we want to support certain types of I/O devices that require physically contiguous buffers larger than 4KB in size, or if we want user-level environments, and not just the kernel, to be able to allocate and map 4MB superpages for maximum processor efficiency. (See the earlier challenge problem about PTE_PS.)
+Generalize the kernel's memory allocation system to support pages of a variety of power-of-two allocation unit sizes from 4KB up to some reasonable maximum of your choice. Be sure you have some way to divide larger allocation units into smaller ones on demand, and to coalesce multiple small allocation units back into larger units when possible. Think about the issues that might arise in such a system.
+```
+The buddy system is exactly what you want, see `malloc lab` in `Introduction to Computer Systems`.
+
+This completes the lab.
+===
 
 
 

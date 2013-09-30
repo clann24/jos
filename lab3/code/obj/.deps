@@ -1,0 +1,26 @@
+obj/kern/kclock.o: kern/kclock.c inc/x86.h inc/types.h kern/kclock.h
+obj/kern/printf.o: kern/printf.c inc/types.h inc/stdio.h inc/stdarg.h
+obj/kern/pmap.o: kern/pmap.c inc/x86.h inc/types.h inc/mmu.h inc/error.h \
+ inc/string.h inc/assert.h inc/stdio.h inc/stdarg.h kern/pmap.h \
+ inc/memlayout.h kern/kclock.h
+obj/kern/entry.o: kern/entry.S inc/mmu.h inc/memlayout.h
+obj/kern/entrypgdir.o: kern/entrypgdir.c inc/mmu.h inc/types.h \
+ inc/memlayout.h
+obj/kern/monitor.o: kern/monitor.c inc/stdio.h inc/stdarg.h inc/string.h \
+ inc/types.h inc/memlayout.h inc/mmu.h inc/assert.h inc/x86.h \
+ kern/console.h kern/monitor.h kern/kdebug.h
+obj/kern/init.o: kern/init.c inc/stdio.h inc/stdarg.h inc/string.h \
+ inc/types.h inc/assert.h kern/monitor.h kern/console.h kern/pmap.h \
+ inc/memlayout.h inc/mmu.h kern/kclock.h
+obj/kern/console.o: kern/console.c inc/x86.h inc/types.h inc/memlayout.h \
+ inc/mmu.h inc/kbdreg.h inc/string.h inc/assert.h inc/stdio.h \
+ inc/stdarg.h inc/csa.h kern/console.h
+obj/boot/main.o: boot/main.c inc/x86.h inc/types.h inc/elf.h
+obj/kern/string.o: lib/string.c inc/string.h inc/types.h
+obj/kern/readline.o: lib/readline.c inc/stdio.h inc/stdarg.h inc/error.h
+obj/boot/boot.o: boot/boot.S inc/mmu.h
+obj/kern/printfmt.o: lib/printfmt.c inc/types.h inc/stdio.h inc/stdarg.h \
+ inc/string.h inc/error.h inc/csa.h
+obj/kern/kdebug.o: kern/kdebug.c inc/stab.h inc/types.h inc/string.h \
+ inc/memlayout.h inc/mmu.h inc/assert.h inc/stdio.h inc/stdarg.h \
+ kern/kdebug.h

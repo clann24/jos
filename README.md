@@ -6,7 +6,9 @@ jos
 JOS lab
 
 [Lab1](https://github.com/Clann24/jos/tree/master/lab1)
+
 [Lab2](https://github.com/Clann24/jos/tree/master/lab2)
+
 [lab3](https://github.com/Clann24/jos/tree/master/lab3)
 
 

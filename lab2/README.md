@@ -1,6 +1,11 @@
 Report for lab2, Shian Chen
 ===
 ```
+All exercises finished,
+One challenge completed.
+```
+
+```
 running JOS: (4.4s) 
   Physical page allocator: OK 
   Page management: OK 

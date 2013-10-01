@@ -1,7 +1,7 @@
 jos
 ===
 
->I'm under some pressure right now with my. OS class and if we could just order food.
+>I'm under some pressure right now with my OS class and if we could just order food.
 
 JOS lab
 
@@ -9,7 +9,7 @@ JOS lab
 
 [Lab2](https://github.com/Clann24/jos/tree/master/lab2)
 
-[lab3](https://github.com/Clann24/jos/tree/master/lab3)
+[Lab3](https://github.com/Clann24/jos/tree/master/lab3)
 
 
 

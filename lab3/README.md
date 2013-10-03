@@ -1,5 +1,27 @@
 Report for lab3, Shian Chen
 ===
+```
+make[1]: Leaving directory `/home/clann/lab3'
+divzero: OK (5.4s) 
+softint: OK (4.6s) 
+badsegment: OK (4.6s) 
+Part A score: 30/30
+
+faultread: OK (4.6s) 
+faultreadkernel: OK (4.6s) 
+faultwrite: OK (4.6s) 
+faultwritekernel: OK (4.6s) 
+breakpoint: OK (4.6s) 
+testbss: OK (4.7s) 
+hello: OK (4.6s) 
+buggyhello: OK (4.6s) 
+buggyhello2: OK (4.6s) 
+    (Old jos.out.buggyhello2 failure log removed)
+evilhello: OK (4.6s) 
+Part B score: 50/50
+
+Score: 80/80
+```
 
 Part A: User Environments and Exception Handling
 ===
@@ -475,19 +497,216 @@ Questions
 ```
 What is the purpose of having an individual handler function for each exception/interrupt? (i.e., if all exceptions/interrupts were delivered to the same handler, what feature that exists in the current implementation could not be provided?)
 ```
+We can't easily provide protection then.
 
 ```
 Did you have to do anything to make the user/softint program behave correctly? The grade script expects it to produce a general protection fault (trap 13), but softint's code says int $14. Why should this produce interrupt vector 13? What happens if the kernel actually allows softint's int $14 instruction to invoke the kernel's page fault handler (which is interrupt vector 14)?
 ```
+We should set the dpl to 3 to allow users invoke `int $14`:
+```
+SETGATE(idt[i], 0, GD_KT, funs[i], 3);
+```
+but this will let user interfere with memory management which is not what we want.
 
 This finishes Part A
 ---
 Part B: Page Faults, Breakpoints Exceptions, and System Calls
 ---
+Exercise 5
+---
+```
+Exercise 5. Modify trap_dispatch() to dispatch page fault exceptions to page_fault_handler(). You should now be able to get make grade to succeed on the faultread, faultreadkernel, faultwrite, and faultwritekernel tests. If any of them don't work, figure out why and fix them. Remember that you can boot JOS into a particular user program using make run-x or make run-x-nox.
+```
+Just add this to `trap_dispatch`:
+```c
+	// LAB 3: Your code here.
+	if (tf->tf_trapno == T_PGFLT) {
+		page_fault_handler(tf);
+		return;
+	}
+```
+and then we can get `50/80` grades by `make grade`.
+
+Exercise 6
+---
+```
+Exercise 6. Modify trap_dispatch() to make breakpoint exceptions invoke the kernel monitor. You should now be able to get make grade to succeed on the breakpoint test.
+```
+Again we can just add an `if` to `trap.c`:
+```c
+if (tf->tf_trapno == T_BRKPT) {
+	monitor(tf);
+	return;
+}
+```
+and we also have to modify the `dpl` of `T_BRKPT` to allow users to invoke breakpoint exceptions:
+```c
+for (i = 0; i <= 16; ++i)
+	if (i==T_BRKPT)
+		SETGATE(idt[i], 0, GD_KT, funs[i], 3)
+	else if (i!=2 && i!=15) {
+		SETGATE(idt[i], 0, GD_KT, funs[i], 0);
+	}
+```
+Challenge
+---
+```
+Challenge! Modify the JOS kernel monitor so that you can 'continue' execution from the current location (e.g., after the int3, if the kernel monitor was invoked via the breakpoint exception), and so that you can single-step one instruction at a time. You will need to understand certain bits of the EFLAGS register in order to implement single-stepping
+```
+Maybe I'll do this later...
+
+Questions
+---
+```
+The break point test case will either generate a break point exception or a general protection fault depending on how you initialized the break point entry in the IDT (i.e., your call to SETGATE from trap_init). Why? How do you need to set it up in order to get the breakpoint exception to work as specified above and what incorrect setup would cause it to trigger a general protection fault?
+```
+Just set the `dpl` that enables user-invoking.
+```
+What do you think is the point of these mechanisms, particularly in light of what the user/softint test program does?
+```
+Protection.
+
+Exercise 7
+---
+```
+Exercise 7. Add a handler in the kernel for interrupt vector T_SYSCALL. You will have to edit kern/trapentry.S and kern/trap.c's trap_init(). You also need to change trap_dispatch() to handle the system call interrupt by calling syscall() (defined in kern/syscall.c) with the appropriate arguments, and then arranging for the return value to be passed back to the user process in %eax. Finally, you need to implement syscall() in kern/syscall.c. Make sure syscall() returns -E_INVAL if the system call number is invalid. You should read and understand lib/syscall.c (especially the inline assembly routine) in order to confirm your understanding of the system call interface. You may also find it helpful to read inc/syscall.h.
+```
+Just be aware of the arguments:
+```c
+int32_t
+syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
+{
+	int ret = 0;
+	switch (syscallno) {
+		case SYS_cputs: 
+			sys_cputs((char*)a1, a2);
+			ret = 0;
+			break;
+		case SYS_cgetc:
+			ret = sys_cgetc();
+			break;
+		case SYS_getenvid:
+			ret = sys_getenvid();
+			break;
+		case SYS_env_destroy:
+			sys_env_destroy(a1);
+			ret = 0;
+			break;
+		default:
+			ret = -E_INVAL;
+	}
+	// cprintf("ret: %x\n", ret);
+	return ret;
+	panic("syscall not implemented");
+}
+```
+Here's the tricky point, we have to assign the `syscall` return value to `tf->tf_regs.reg_eax` as the return value of the trap (well, another hour to figure it out when doing exercise 8):
+```c
+tf->tf_regs.reg_eax = 
+	syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx,
+			tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+```
+```c
+static void
+trap_dispatch(struct Trapframe *tf)
+{
+	// Handle processor exceptions.
+	// LAB 3: Your code here.
+	if (tf->tf_trapno == T_PGFLT) {
+		cprintf("PAGE FAULT\n");
+		page_fault_handler(tf);
+		return;
+	}
+	if (tf->tf_trapno == T_BRKPT) {
+		cprintf("BREAK POINT\n");
+		monitor(tf);
+		return;
+	}
+	if (tf->tf_trapno == T_SYSCALL) {
+		cprintf("SYSTEM CALL\n");
+		tf->tf_regs.reg_eax = 
+			syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx,
+				tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+		return;
+	}
+	// Unexpected trap: The user process or the kernel has a bug.
+	print_trapframe(tf);
+	if (tf->tf_cs == GD_KT)
+		panic("unhandled trap in kernel");
+	else {
+		env_destroy(curenv);
+		return;
+	}
+}
+```
+
+Exercise 8
+---
+```
+Exercise 8. Add the required code to the user library, then boot your kernel. You should see user/hello print "hello, world" and then print "i am environment 00001000". user/hello then attempts to "exit" by calling sys_env_destroy() (see lib/libmain.c and lib/exit.c). Since the kernel currently only supports one user environment, it should report that it has destroyed the only environment and then drop into the kernel monitor. You should be able to get make grade to succeed on the hello test.
+```
+Just one line `thisenv = envs+ENVX(sys_getenvid());` in libmain
+
+Exercise 9
+---
+```
+Exercise 9. Change kern/trap.c to panic if a page fault happens in kernel mode.
+
+Hint: to determine whether a fault happened in user mode or in kernel mode, check the low bits of the tf_cs.
+
+Read user_mem_assert in kern/pmap.c and implement user_mem_check in that same file.
+
+Change kern/syscall.c to sanity check arguments to system calls.
+
+Boot your kernel, running user/buggyhello. The environment should be destroyed, and the kernel should not panic. You should see:
+
+	[00001000] user_mem_check assertion failure for va 00000001
+	[00001000] free env 00001000
+	Destroyed the only environment - nothing more to do!
+	
+Finally, change debuginfo_eip in kern/kdebug.c to call user_mem_check on usd, stabs, and stabstr. If you now run user/breakpoint, you should be able to run backtrace from the kernel monitor and see the backtrace traverse into lib/libmain.c before the kernel panics with a page fault. What causes this page fault? You don't need to fix it, but you should understand why it happens.
+```
+Just panic when page fault occur in kernel mode:
+```c
+	if ((tf->tf_cs&3) == 0)
+		panic("Kernel page fault!");
+```
+In `user_mem_check`, we should first test whether `i` is above ULIM, test whether `pte` and `*pte` is valid, then the `perm`:
+```c
+int
+user_mem_check(struct Env *env, const void *va, size_t len, int perm)
+{
+	// LAB 3: Your code here.
+	cprintf("user_mem_check va: %x, len: %x\n", va, len);
+	uint32_t begin = (uint32_t) ROUNDDOWN(va, PGSIZE); 
+	uint32_t end = (uint32_t) ROUNDUP(va+len, PGSIZE);
+	uint32_t i;
+	for (i = (uint32_t)begin; i < end; i+=PGSIZE) {
+		pte_t *pte = pgdir_walk(env->env_pgdir, (void*)i, 0);
+		pprint(pte);
+		if ((i>=ULIM) || !pte || !(*pte & PTE_P) || ((*pte & perm) != perm)) {
+			user_mem_check_addr = (i<(uint32_t)va?(uint32_t)va:i);
+			return -E_FAULT;
+		}
+	}
+	cprintf("user_mem_check success va: %x, len: %x\n", va, len);
+	return 0;
+}
+```
+Exercise 10
+---
+```
+Exercise 10. Boot your kernel, running user/evilhello. The environment should be destroyed, and the kernel should not panic. You should see:
+
+	[00000000] new env 00001000
+	[00001000] user_mem_check assertion failure for va f0100020
+	[00001000] free env 00001000
+```
+This test passes automaticly after Exercise 9 is finished.
 
 
-
-
+This completes the lab.
+===
 
 
 

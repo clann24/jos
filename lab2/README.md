@@ -457,6 +457,76 @@ f011a000 before setm: PTE_P: 1, PTE_W: 2, PTE_U: 4
 f011a000 after  setm: PTE_P: 1, PTE_W: 2, PTE_U: 0
 K> 
 ```
+Here's my `showvm` that is used to view memory:
+```c
+int showvm(int argc, char **argv, struct Trapframe *tf) {
+	if (argc == 1) {
+		cprintf("Usage: showvm 0xaddr 0xn\n");
+		return 0;
+	}
+	void** addr = (void**) xtoi(argv[1]);
+	uint32_t n = xtoi(argv[2]);
+	int i;
+	for (i = 0; i < n; ++i)
+		cprintf("VM at %x is %x\n", addr+i, addr[i]);
+	return 0;
+}
+```
+```
+K> showvm 0xf011c340 0x31
+VM at f011c340 is f0103fb8
+VM at f011c344 is f0103fbe
+VM at f011c348 is 0
+VM at f011c34c is f0103fc4
+VM at f011c350 is f0103fca
+VM at f011c354 is f0103fd0
+VM at f011c358 is f0103fd6
+VM at f011c35c is f0103fdc
+VM at f011c360 is f0103fe2
+VM at f011c364 is f0103fe6
+VM at f011c368 is f0103fec
+VM at f011c36c is f0103ff0
+VM at f011c370 is f0103ff4
+VM at f011c374 is f0103ff8
+VM at f011c378 is f0103ffc
+VM at f011c37c is 0
+VM at f011c380 is f0104000
+VM at f011c384 is 0
+VM at f011c388 is 0
+VM at f011c38c is 0
+VM at f011c390 is 0
+VM at f011c394 is 0
+VM at f011c398 is 0
+VM at f011c39c is 0
+VM at f011c3a0 is 0
+VM at f011c3a4 is 0
+VM at f011c3a8 is 0
+VM at f011c3ac is 0
+VM at f011c3b0 is 0
+VM at f011c3b4 is 0
+VM at f011c3b8 is 0
+VM at f011c3bc is 0
+VM at f011c3c0 is 0
+VM at f011c3c4 is 0
+VM at f011c3c8 is 0
+VM at f011c3cc is 0
+VM at f011c3d0 is 0
+VM at f011c3d4 is 0
+VM at f011c3d8 is 0
+VM at f011c3dc is 0
+VM at f011c3e0 is 0
+VM at f011c3e4 is 0
+VM at f011c3e8 is 0
+VM at f011c3ec is 0
+VM at f011c3f0 is 0
+VM at f011c3f4 is 0
+VM at f011c3f8 is 0
+VM at f011c3fc is 0
+VM at f011c400 is f0104006
+K> 
+```
+
+
 
 Challenge
 ---

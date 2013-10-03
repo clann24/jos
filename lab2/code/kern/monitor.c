@@ -25,6 +25,7 @@ struct Command {
 int backtrace(int argc, char **argv, struct Trapframe *tf);
 int showmappings(int argc, char **argv, struct Trapframe *tf);
 int setm(int argc, char **argv, struct Trapframe *tf);
+int showvm(int argc, char **argv, struct Trapframe *tf);
 
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
@@ -33,6 +34,7 @@ static struct Command commands[] = {
 	{ "backtrace", "backtrace", backtrace },
 	{ "showmappings", "showmappings", showmappings },
 	{ "setm", "setm", setm },
+	{ "showvm", "showvm", showvm },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -223,6 +225,20 @@ int setm(int argc, char **argv, struct Trapframe *tf) {
 	pprint(pte);
 	return 0;
 }
+
+int showvm(int argc, char **argv, struct Trapframe *tf) {
+	if (argc == 1) {
+		cprintf("Usage: showvm 0xaddr 0xn\n");
+		return 0;
+	}
+	void** addr = (void**) xtoi(argv[1]);
+	uint32_t n = xtoi(argv[2]);
+	int i;
+	for (i = 0; i < n; ++i)
+		cprintf("VM at %x is %x\n", addr+i, addr[i]);
+	return 0;
+}
+
 
 
 

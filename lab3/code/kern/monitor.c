@@ -26,6 +26,7 @@ struct Command {
 int csa_backtrace(int argc, char **argv, struct Trapframe *tf);
 int showmappings(int argc, char **argv, struct Trapframe *tf);
 int setm(int argc, char **argv, struct Trapframe *tf);
+int showvm(int argc, char **argv, struct Trapframe *tf);
 
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
@@ -34,6 +35,7 @@ static struct Command commands[] = {
 	{ "csa_backtrace", "csa_backtrace", csa_backtrace },
 	{ "showmappings", "showmappings", showmappings },
 	{ "setm", "setm", setm },
+	{ "showvm", "showvm", showvm },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -162,7 +164,13 @@ monitor(struct Trapframe *tf)
 
 	if (tf != NULL)
 		print_trapframe(tf);
-
+	// env_pop_tf(tf);
+	// asm volatile("\tpushf\n":::);
+	// asm volatile("\tpopl %%eax\n":::);
+	// asm volatile("or $0x0100, %%eax\n":::);
+	// asm volatile("\tpushl %%eax\n":::);
+	// asm volatile("\tpopf\n":::);
+	// asm volatile("\tjmp *%0\n":: "g" (&tf->tf_eip): "memory");
 	while (1) {
 		buf = readline("K> ");
 		if (buf != NULL)
@@ -227,7 +235,18 @@ int setm(int argc, char **argv, struct Trapframe *tf) {
 	return 0;
 }
 
-
+int showvm(int argc, char **argv, struct Trapframe *tf) {
+	if (argc == 1) {
+		cprintf("Usage: showvm 0xaddr 0xn\n");
+		return 0;
+	}
+	void** addr = (void**) xtoi(argv[1]);
+	uint32_t n = xtoi(argv[2]);
+	int i;
+	for (i = 0; i < n; ++i)
+		cprintf("VM at %x is %x\n", addr+i, addr[i]);
+	return 0;
+}
 
 
 

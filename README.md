@@ -11,7 +11,9 @@ JOS lab
 
 [Lab3](https://github.com/Clann24/jos/tree/master/lab3)
 
+[Lab4](https://github.com/Clann24/jos/tree/master/lab4)
 
+[Lab5](https://github.com/Clann24/jos/tree/master/lab5)
 
 
 

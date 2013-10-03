@@ -1,5 +1,10 @@
 Report for lab3, Shian Chen
 ===
+
+>all exercises finished 
+
+>one challenge completed
+
 ```
 make[1]: Leaving directory `/home/clann/lab3'
 divzero: OK (5.4s) 

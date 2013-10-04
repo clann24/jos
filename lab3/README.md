@@ -669,7 +669,6 @@ Boot your kernel, running user/buggyhello. The environment should be destroyed, 
 	[00001000] free env 00001000
 	Destroyed the only environment - nothing more to do!
 	
-Finally, change debuginfo_eip in kern/kdebug.c to call user_mem_check on usd, stabs, and stabstr. If you now run user/breakpoint, you should be able to run backtrace from the kernel monitor and see the backtrace traverse into lib/libmain.c before the kernel panics with a page fault. What causes this page fault? You don't need to fix it, but you should understand why it happens.
 ```
 Just panic when page fault occur in kernel mode:
 ```c
@@ -698,6 +697,40 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 	return 0;
 }
 ```
+
+```
+Finally, change debuginfo_eip in kern/kdebug.c to call user_mem_check on usd, stabs, and stabstr. If you now run user/breakpoint, you should be able to run backtrace from the kernel monitor and see the backtrace traverse into lib/libmain.c before the kernel panics with a page fault. What causes this page fault? You don't need to fix it, but you should understand why it happens.
+```
+Add the checking code to the `kdebug.c` to avoid kernel page fault:
+```c
+	if (user_mem_check(curenv, usd, sizeof(struct UserStabData), PTE_U))
+		return -1;
+		
+	...
+
+	if (user_mem_check(curenv, stabs, sizeof(struct Stab), PTE_U))
+		return -1;
+
+	if (user_mem_check(curenv, stabstr, stabstr_end-stabstr, PTE_U))
+		return -1;
+```
+
+When I call `backtrace` I get a `PAGE FAULT`, it is easy to see that the PF is caused by accessing memory `0xeebfe000`, which is beyond the user stack:
+```
+K> csa_backtrace
+Stack backtrace:
+ebp efffff00  eip f0100a44  args 00000001 efffff28 f01a2000 00000200 f0105675
+	     kern/monitor.c:177: monitor+337
+ebp efffff80  eip f010402a  args f01a2000 efffffbc 00000014 00000000 00000000
+	     kern/trap.c:197: trap+207
+ebp efffffb0  eip f0104147  args efffffbc 00000000 00000000 eebfdfd0 efffffdc
+	     kern/trapentry.S:114: <unknown>+0
+ebp eebfdfd0  eip 80007f  args 00000000 00000000 00000000 00000000 00000000
+	     lib/libmain.c:30: libmain+67
+ebp eebfdff0  eip 800031  args 00000000 00000000Incoming TRAP frame at 0xeffffe6c
+PAGE FAULT
+```
+
 Exercise 10
 ---
 ```

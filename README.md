@@ -5,6 +5,8 @@ jos
 
 JOS lab
 
+[Flow Graph](https://github.com/Clann24/jos/tree/master/graph)
+
 [Lab1](https://github.com/Clann24/jos/tree/master/lab1)
 
 [Lab2](https://github.com/Clann24/jos/tree/master/lab2)

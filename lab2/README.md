@@ -306,12 +306,7 @@ Total:6MB+4KB
 
 >Revisit the page table setup in kern/entry.S and kern/entrypgdir.c. Immediately after we turn on paging, EIP is still a low number (a little over 1MB). At what point do we transition to running at an EIP above KERNBASE? What makes it possible for us to continue executing at a low EIP between when we enable paging and when we begin running at an EIP above KERNBASE? Why is this transition necessary?
 
-After `jmp *%eax` finished. It is possible and necessary because the kernel is linked at `0xf0000000`, so `relocated` is `KERNBASE+previous value`.
-```asm
-	mov	$relocated, %eax
-	jmp	*%eax
-relocated:
-```
+After `jmp *%eax` finished. It is possible because `entry_pgdir` also maps va [0, 4M) to pa [0, 4M), it's necessary because later a `kern_pgdir` will be loaded and va [0, 4M) will be abandoned.
 
 Challenges
 ===

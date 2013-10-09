@@ -91,7 +91,7 @@ Exercise 3
 
 >Q: At what point does the processor start executing 32-bit code? What exactly causes the switch from 16- to 32-bit mode?
 
-The `movl %eax, %cr0` causes the switch from 16- to 32-bit mode in the `boot.S`:
+The `ljmp    $PROT_MODE_CSEG, $protcseg` causes the switch from 16- to 32-bit mode in the `boot.S`:
 ```assembly
   lgdt    gdtdesc
   movl    %cr0, %eax

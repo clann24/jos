@@ -1,0 +1,184 @@
+obj/user/idle.o: user/idle.c inc/x86.h inc/types.h inc/lib.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/entry.o: kern/entry.S inc/mmu.h inc/memlayout.h inc/trap.h
+obj/user/faultnostack.o: user/faultnostack.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/stresssched.o: user/stresssched.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/console.o: kern/console.c inc/x86.h inc/types.h inc/memlayout.h \
+ inc/mmu.h inc/kbdreg.h inc/string.h inc/assert.h inc/stdio.h \
+ inc/stdarg.h inc/csa.h kern/console.h kern/picirq.h
+obj/lib/entry.o: lib/entry.S inc/mmu.h inc/memlayout.h
+obj/kern/spinlock.o: kern/spinlock.c inc/types.h inc/assert.h inc/stdio.h \
+ inc/stdarg.h inc/x86.h inc/memlayout.h inc/mmu.h inc/string.h kern/cpu.h \
+ inc/env.h inc/trap.h kern/spinlock.h kern/kdebug.h
+obj/kern/pmap.o: kern/pmap.c inc/x86.h inc/types.h inc/mmu.h inc/error.h \
+ inc/string.h inc/assert.h inc/stdio.h inc/stdarg.h kern/pmap.h \
+ inc/memlayout.h kern/kclock.h kern/env.h inc/env.h inc/trap.h kern/cpu.h
+obj/user/primes.o: user/primes.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/lib/pgfault.o: lib/pgfault.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/mpentry.o: kern/mpentry.S inc/mmu.h inc/memlayout.h
+obj/kern/sched.o: kern/sched.c inc/assert.h inc/stdio.h inc/stdarg.h \
+ inc/x86.h inc/types.h kern/spinlock.h kern/env.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h kern/cpu.h kern/pmap.h kern/monitor.h
+obj/lib/readline.o: lib/readline.c inc/stdio.h inc/stdarg.h inc/error.h
+obj/kern/syscall.o: kern/syscall.c inc/x86.h inc/types.h inc/error.h \
+ inc/string.h inc/assert.h inc/stdio.h inc/stdarg.h kern/env.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h kern/cpu.h kern/pmap.h kern/trap.h \
+ kern/syscall.h inc/syscall.h kern/console.h kern/sched.h
+obj/user/divzero.o: user/divzero.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/entrypgdir.o: kern/entrypgdir.c inc/mmu.h inc/types.h \
+ inc/memlayout.h
+obj/lib/libmain.o: lib/libmain.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/string.o: lib/string.c inc/string.h inc/types.h
+obj/lib/fork.o: lib/fork.c inc/string.h inc/types.h inc/lib.h inc/stdio.h \
+ inc/stdarg.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/pingpong.o: user/pingpong.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/printf.o: kern/printf.c inc/types.h inc/stdio.h inc/stdarg.h
+obj/user/faultbadhandler.o: user/faultbadhandler.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/faultallocbad.o: user/faultallocbad.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/lapic.o: kern/lapic.c inc/types.h inc/memlayout.h inc/mmu.h \
+ inc/trap.h inc/stdio.h inc/stdarg.h inc/x86.h kern/pmap.h inc/assert.h \
+ kern/cpu.h inc/env.h
+obj/user/softint.o: user/softint.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/buggyhello.o: user/buggyhello.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/boot/boot.o: boot/boot.S inc/mmu.h
+obj/kern/trap.o: kern/trap.c inc/mmu.h inc/types.h inc/x86.h inc/assert.h \
+ inc/stdio.h inc/stdarg.h kern/pmap.h inc/memlayout.h kern/trap.h \
+ inc/trap.h kern/console.h kern/monitor.h kern/env.h inc/env.h kern/cpu.h \
+ kern/syscall.h inc/syscall.h kern/sched.h kern/kclock.h kern/picirq.h \
+ kern/spinlock.h
+obj/kern/trapentry.o: kern/trapentry.S inc/mmu.h inc/memlayout.h \
+ inc/trap.h kern/picirq.h
+obj/lib/console.o: lib/console.c inc/string.h inc/types.h inc/lib.h \
+ inc/stdio.h inc/stdarg.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/badsegment.o: user/badsegment.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/pingpongs.o: user/pingpongs.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/dumbfork.o: user/dumbfork.c inc/string.h inc/types.h inc/lib.h \
+ inc/stdio.h inc/stdarg.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/lib/string.o: lib/string.c inc/string.h inc/types.h
+obj/boot/main.o: boot/main.c inc/x86.h inc/types.h inc/elf.h
+obj/kern/init.o: kern/init.c inc/stdio.h inc/stdarg.h inc/string.h \
+ inc/types.h inc/assert.h kern/monitor.h kern/console.h kern/pmap.h \
+ inc/memlayout.h inc/mmu.h kern/kclock.h kern/env.h inc/env.h inc/trap.h \
+ kern/cpu.h kern/trap.h kern/sched.h kern/picirq.h inc/x86.h \
+ kern/spinlock.h
+obj/lib/printf.o: lib/printf.c inc/types.h inc/stdio.h inc/stdarg.h \
+ inc/lib.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/faultwrite.o: user/faultwrite.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/yield.o: user/yield.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/printfmt.o: lib/printfmt.c inc/types.h inc/stdio.h inc/stdarg.h \
+ inc/string.h inc/error.h inc/csa.h
+obj/user/faultread.o: user/faultread.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/mpconfig.o: kern/mpconfig.c inc/types.h inc/string.h \
+ inc/memlayout.h inc/mmu.h inc/x86.h inc/env.h inc/trap.h kern/cpu.h \
+ kern/pmap.h inc/assert.h inc/stdio.h inc/stdarg.h
+obj/lib/pfentry.o: lib/pfentry.S inc/mmu.h inc/memlayout.h
+obj/lib/syscall.o: lib/syscall.c inc/syscall.h inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h
+obj/user/fairness.o: user/fairness.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/spin.o: user/spin.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/lib/exit.o: lib/exit.c inc/lib.h inc/types.h inc/stdio.h inc/stdarg.h \
+ inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/lib/panic.o: lib/panic.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/monitor.o: kern/monitor.c inc/stdio.h inc/stdarg.h inc/string.h \
+ inc/types.h inc/memlayout.h inc/mmu.h inc/assert.h inc/x86.h \
+ kern/console.h kern/monitor.h kern/kdebug.h kern/trap.h inc/trap.h \
+ kern/pmap.h
+obj/user/breakpoint.o: user/breakpoint.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/faultdie.o: user/faultdie.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/faultregs.o: user/faultregs.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/faultalloc.o: user/faultalloc.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/kdebug.o: kern/kdebug.c inc/stab.h inc/types.h inc/string.h \
+ inc/memlayout.h inc/mmu.h inc/assert.h inc/stdio.h inc/stdarg.h \
+ kern/kdebug.h kern/pmap.h kern/env.h inc/env.h inc/trap.h kern/cpu.h
+obj/user/faultevilhandler.o: user/faultevilhandler.c inc/lib.h \
+ inc/types.h inc/stdio.h inc/stdarg.h inc/string.h inc/error.h \
+ inc/assert.h inc/env.h inc/trap.h inc/memlayout.h inc/mmu.h \
+ inc/syscall.h
+obj/kern/kclock.o: kern/kclock.c inc/x86.h inc/types.h kern/kclock.h
+obj/lib/printfmt.o: lib/printfmt.c inc/types.h inc/stdio.h inc/stdarg.h \
+ inc/string.h inc/error.h inc/csa.h
+obj/user/buggyhello2.o: user/buggyhello2.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/faultwritekernel.o: user/faultwritekernel.c inc/lib.h \
+ inc/types.h inc/stdio.h inc/stdarg.h inc/string.h inc/error.h \
+ inc/assert.h inc/env.h inc/trap.h inc/memlayout.h inc/mmu.h \
+ inc/syscall.h
+obj/user/forktree.o: user/forktree.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/readline.o: lib/readline.c inc/stdio.h inc/stdarg.h inc/error.h
+obj/kern/env.o: kern/env.c inc/x86.h inc/types.h inc/mmu.h inc/error.h \
+ inc/string.h inc/assert.h inc/stdio.h inc/stdarg.h inc/elf.h kern/env.h \
+ inc/env.h inc/trap.h inc/memlayout.h kern/cpu.h kern/pmap.h kern/trap.h \
+ kern/monitor.h kern/sched.h kern/spinlock.h
+obj/user/faultreadkernel.o: user/faultreadkernel.c inc/lib.h inc/types.h \
+ inc/stdio.h inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h \
+ inc/trap.h inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/lib/ipc.o: lib/ipc.c inc/lib.h inc/types.h inc/stdio.h inc/stdarg.h \
+ inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/kern/picirq.o: kern/picirq.c inc/assert.h inc/stdio.h inc/stdarg.h \
+ inc/trap.h inc/types.h kern/picirq.h inc/x86.h
+obj/user/hello.o: user/hello.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/testbss.o: user/testbss.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h
+obj/user/evilhello.o: user/evilhello.c inc/lib.h inc/types.h inc/stdio.h \
+ inc/stdarg.h inc/string.h inc/error.h inc/assert.h inc/env.h inc/trap.h \
+ inc/memlayout.h inc/mmu.h inc/syscall.h

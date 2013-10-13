@@ -178,14 +178,244 @@ Exercise 7. Implement the system calls described above in kern/syscall.c. You wi
 Please see `kern/syscall.c` for details because there's too much code. One tip for this exercise: Be aware of the difference between `page_insert` and `page_alloc`.
 
 
-Part B
+Part B: Copy-on-Write Fork
 ---
+Exercise 8
+---
+```
+Exercise 8. Implement the sys_env_set_pgfault_upcall system call. Be sure to enable permission checking when looking up the environment ID of the target environment, since this is a "dangerous" system call.
+```
+Can't be easier, no comments for the code:
+```c
+static int
+sys_env_set_pgfault_upcall(envid_t envid, void *func)
+{
+	struct Env *e; 
+	int ret = envid2env(envid, &e, 1);
+	if (ret) return ret;	//bad_env
+	e->env_pgfault_upcall = func;
+	return 0;
+}
+```
+Exercise 9
+---
+```
+Exercise 9. Implement the code in page_fault_handler in kern/trap.c required to dispatch page faults to the user-mode handler. Be sure to take appropriate precautions when writing into the exception stack. (What happens if the user environment runs out of space on the exception stack?)
+```
+We have to check `utf_addr` for validation:
+```c
+void
+page_fault_handler(struct Trapframe *tf)
+{
+	uint32_t fault_va;
+	fault_va = rcr2();
+	cprintf("fault_va: %x\n", fault_va);
+	// LAB 3: Your code here.
+	if ((tf->tf_cs&3) == 0) {
+		panic("Kernel page fault!");
+	}
+	// LAB 4: Your code here.
+	if (curenv->env_pgfault_upcall) {
+		struct UTrapframe *utf;
+		uintptr_t utf_addr;
+		if (UXSTACKTOP-PGSIZE<=tf->tf_esp && tf->tf_esp<=UXSTACKTOP-1)
+			utf_addr = tf->tf_esp - sizeof(struct UTrapframe) - 4;
+		else 
+			utf_addr = UXSTACKTOP - sizeof(struct UTrapframe);
+		user_mem_assert(curenv, (void*)utf_addr, 1, PTE_W);//1 is enough
+		utf = (struct UTrapframe *) utf_addr;
 
+		utf->utf_fault_va = fault_va;
+		utf->utf_err = tf->tf_err;
+		utf->utf_regs = tf->tf_regs;
+		utf->utf_eip = tf->tf_eip;
+		utf->utf_eflags = tf->tf_eflags;
+		utf->utf_esp = tf->tf_esp;
 
+		curenv->env_tf.tf_eip = (uintptr_t)curenv->env_pgfault_upcall;
+		curenv->env_tf.tf_esp = utf_addr;
+		env_run(curenv);
+	}
 
+	// Destroy the environment that caused the fault.
+	cprintf("[%08x] user fault va %08x ip %08x\n",
+		curenv->env_id, fault_va, tf->tf_eip);
+	print_trapframe(tf);
+	env_destroy(curenv);
+}
+```
+Exercise 10
+---
+```
+Exercise 10. Implement the _pgfault_upcall routine in lib/pfentry.S. The interesting part is returning to the original point in the user code that caused the page fault. You'll return directly there, without going back through the kernel. The hard part is simultaneously switching stacks and re-loading the EIP.
+```
+See the comments:
+```asm
+.text
+.globl _pgfault_upcall
+_pgfault_upcall:
+	// Call the C page fault handler.
+	pushl %esp			// function argument: pointer to UTF
+	movl _pgfault_handler, %eax
+	call *%eax
+	addl $4, %esp			// pop function argument
+	
+	movl 0x28(%esp), %edx # trap-time eip
+	subl $0x4, 0x30(%esp) # we have to use subl now because we can't use after popfl
+	movl 0x30(%esp), %eax # trap-time esp-4
+	movl %edx, (%eax)
+	addl $0x8, %esp
 
+	// Restore the trap-time registers.  After you do this, you
+	// can no longer modify any general-purpose registers.
+	// LAB 4: Your code here.
+	popal
 
+	// Restore eflags from the stack.  After you do this, you can
+	// no longer use arithmetic operations or anything else that
+	// modifies eflags.
+	// LAB 4: Your code here.
+	addl $0x4, %esp #eip
+	popfl
 
+	// Switch back to the adjusted trap-time stack.
+	// LAB 4: Your code here.
+	popl %esp
+
+	// Return to re-execute the instruction that faulted.
+	// LAB 4: Your code here.
+	ret
+```
+Exercise 11
+---
+```
+Exercise 11. Finish set_pgfault_handler() in lib/pgfault.c.
+```
+Just follow the guide:
+```c
+void
+set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
+{
+	int r;
+
+	if (_pgfault_handler == 0) {
+		if (sys_page_alloc(0, (void*)(UXSTACKTOP-PGSIZE), PTE_W|PTE_U|PTE_P) < 0) 
+			panic("set_pgfault_handler:sys_page_alloc failed");;
+	}
+	// Save handler pointer for assembly to call.
+	_pgfault_handler = handler;
+	if (sys_env_set_pgfault_upcall(0, _pgfault_upcall) < 0)
+		panic("set_pgfault_handler:sys_env_set_pgfault_upcall failed");
+}
+```
+Exercise 12
+---
+```
+Exercise 12. Implement fork, duppage and pgfault in lib/fork.c.
+
+Test your code with the forktree program. It should produce the following messages, with interspersed 'new env', 'free env', and 'exiting gracefully' messages. The messages may not appear in this order, and the environment IDs may be different.
+
+	1000: I am ''
+	1001: I am '0'
+	2000: I am '00'
+	2001: I am '000'
+	1002: I am '1'
+	3000: I am '11'
+	3001: I am '10'
+	4000: I am '100'
+	1003: I am '01'
+	5000: I am '010'
+	4001: I am '011'
+	2002: I am '110'
+	1004: I am '001'
+	1005: I am '111'
+	1006: I am '101'
+```
+`PFTEMP` is used as a temporary vm for storing a physical page:
+```c
+static void
+pgfault(struct UTrapframe *utf)
+{
+	void *addr = (void *) utf->utf_fault_va;
+	uint32_t err = utf->utf_err;
+	int r;
+
+	if (!(
+			(err & FEC_WR) && (uvpd[PDX(addr)] & PTE_P) && 
+			(uvpt[PGNUM(addr)] & PTE_P) && (uvpt[PGNUM(addr)] & PTE_COW)))
+		panic("not copy-on-write");
+
+	addr = ROUNDDOWN(addr, PGSIZE);
+	if (sys_page_alloc(0, PFTEMP, PTE_W|PTE_U|PTE_P) < 0)
+		panic("sys_page_alloc");
+	memcpy(PFTEMP, addr, PGSIZE);
+	if (sys_page_map(0, PFTEMP, 0, addr, PTE_W|PTE_U|PTE_P) < 0)
+		panic("sys_page_map");
+	if (sys_page_unmap(0, PFTEMP) < 0)
+		panic("sys_page_unmap");
+	return;
+}
+```
+Permissions is checked beforehand so just test the `PTE_W` and `PTE_COW`:
+```c
+static int
+duppage(envid_t envid, unsigned pn)
+{
+	int r;
+	// LAB 4: Your code here.
+	void *addr = (void*) (pn*PGSIZE);
+	if ((uvpt[pn] & PTE_W) || (uvpt[pn] & PTE_COW)) {
+		if (sys_page_map(0, addr, envid, addr, PTE_COW|PTE_U|PTE_P) < 0)
+			panic("2");
+		if (sys_page_map(0, addr, 0, addr, PTE_COW|PTE_U|PTE_P) < 0)
+			panic("3");
+	} else sys_page_map(0, addr, envid, addr, PTE_U|PTE_P);
+	return 0;
+	panic("duppage not implemented");
+}
+```
+
+We have to check `uvpd` present first to avoid page fault in accessing uvpt:
+```c
+envid_t
+fork(void)
+{
+	set_pgfault_handler(pgfault);
+
+	envid_t envid;
+	uint32_t addr;
+	envid = sys_exofork();
+	if (envid == 0) {
+		// panic("child");
+		thisenv = &envs[ENVX(sys_getenvid())];
+		return 0;
+	}
+	// cprintf("sys_exofork: %x\n", envid);
+	if (envid < 0)
+		panic("sys_exofork: %e", envid);
+
+	for (addr = 0; addr < USTACKTOP; addr += PGSIZE)
+		if ((uvpd[PDX(addr)] & PTE_P) && (uvpt[PGNUM(addr)] & PTE_P)
+			&& (uvpt[PGNUM(addr)] & PTE_U)) {
+			duppage(envid, PGNUM(addr));
+		}
+
+	if (sys_page_alloc(envid, (void *)(UXSTACKTOP-PGSIZE), PTE_U|PTE_W|PTE_P) < 0)
+		panic("1");
+	extern void _pgfault_upcall();
+	sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
+
+	if (sys_env_set_status(envid, ENV_RUNNABLE) < 0)
+		panic("sys_env_set_status");
+
+	return envid;
+	panic("fork not implemented");
+}
+```
+
+Part C
+---
+Part C: Preemptive Multitasking and Inter-Process communication (IPC)
 
 
 

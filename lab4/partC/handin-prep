@@ -1,0 +1,60 @@
+#!/bin/sh
+
+KEYFILE="$HOME/.ssh/id_rsa"
+BASE_URL="https://pdos.csail.mit.edu/6.828/submit/"
+PK_URL="$BASE_URL""setpubkey"
+SSH_HOST="josgit@am.csail.mit.edu"
+GIT_URL="ssh://$SSH_HOST/joslab.git"
+REPO="handin"
+
+# generate key pairs if not exist
+if ! test -r "$KEYFILE"; then
+    read -p "SSH key file $KEYFILE does not exist, generate one? [Y/n]" r
+    test "$r" = y -o "$r" = Y -o -z "$r" || exit 0
+
+    mkdir -p "`dirname $KEYFILE`"
+    if ! ssh-keygen -t rsa -N '' -C '' -f "$KEYFILE"; then
+        echo "$0: cannot generate key pairs"
+        exit 1
+    fi
+fi
+
+# retrieve and display public key
+pubkey=$(ssh-keygen -y -f "$KEYFILE")
+if test -z "$pubkey"; then
+    echo "$0: cannot retrieve public key from $KEYFILE"
+    exit 1
+fi
+echo "Using public key from $KEYFILE:"
+echo "$pubkey" 
+read -p "Continue? [Y/n]" r
+test "$r" = y -o "$r" = Y -o -z "$r" || exit 0
+
+# login to server
+echo
+echo "Login to 6.828 submission website."
+echo "If you do not have an account yet, sign up at $BASE_URL"
+echo "before continuing."
+read -p  "Username ($USER): " username
+test -n "$username" || username="$USER"
+test -n "$username" || exit 0
+stty -echo
+read -p "Password: " password
+stty echo
+test -n "$password" || exit 0
+echo
+
+resp=$(curl -sSk -F "u=$username" -F "p=$password" -F "k=$pubkey" "$PK_URL")
+if test "$resp" != "OK"; then
+    test -z "$resp" || echo "$resp"
+    exit 1
+fi
+echo "Your public key has been successfully updated."
+
+# config git
+echo "Setting up hand-in Git repository..."
+echo "Adding remote repository $GIT_URL as '$REPO'."
+git remote rm "$REPO" 2> /dev/null
+git remote add "$REPO" "$GIT_URL" || exit 1
+echo "Done! Use 'make handin' to submit your lab code."
+echo

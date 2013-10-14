@@ -1,7 +1,35 @@
 Report for lab4, Shian Chen
 ===
 
->well
+>all exercises finished 
+
+>one challenge completed
+
+```
+make[1]: Leaving directory `/home/clann/lab4'
+dumbfork: OK (5.0s) 
+Part A score: 5/5
+
+faultread: OK (4.6s) 
+faultwrite: OK (4.7s) 
+faultdie: OK (4.6s) 
+faultregs: OK (4.6s) 
+faultalloc: OK (4.6s) 
+faultallocbad: OK (4.6s) 
+faultnostack: OK (4.6s) 
+faultbadhandler: OK (4.6s) 
+faultevilhandler: OK (4.6s) 
+forktree: OK (4.8s) 
+Part B score: 50/50
+
+spin: OK (4.7s) 
+stresssched: OK (6.9s) 
+pingpong: OK (4.8s) 
+primes: OK (47.2s) 
+Part C score: 20/20
+
+Score: 75/75
+```
 
 
 Part A: Multiprocessor Support and Cooperative Multitasking
@@ -176,6 +204,276 @@ Exercise 7
 Exercise 7. Implement the system calls described above in kern/syscall.c. You will need to use various functions in kern/pmap.c and kern/env.c, particularly envid2env(). For now, whenever you call envid2env(), pass 1 in the checkperm parameter. Be sure you check for any invalid system call arguments, returning -E_INVAL in that case. Test your JOS kernel with user/dumbfork and make sure it works before proceeding.
 ```
 Please see `kern/syscall.c` for details because there's too much code. One tip for this exercise: Be aware of the difference between `page_insert` and `page_alloc`.
+
+
+Challenge
+---
+```
+Challenge! Add a less trivial scheduling policy to the kernel, such as a fixed-priority scheduler that allows each environment to be assigned a priority and ensures that higher-priority environments are always chosen in preference to lower-priority environments. If you're feeling really adventurous, try implementing a Unix-style adjustable-priority scheduler or even a lottery or stride scheduler. (Look up "lottery scheduling" and "stride scheduling" in Google.)
+
+Write a test program or two that verifies that your scheduling algorithm is working correctly (i.e., the right environments get run in the right order). It may be easier to write these test programs once you have implemented fork() and IPC in parts B and C of this lab.
+```
+This challenge was completed after I finished all exercises.
+
+I implemented a fixed-priority scheduling. First add a `pr` field in `struct Env` to indicate the priority, the lower `pr` the higher the priority. Then modify the `sched_yield` to consider the `pr` field, be aware of the condition to run `curenv`, don't be confused with the `&&` and `||` and the order of every argument, or it will cause problem in multiprocessor condition (well, obviously I had gotten in trouble with that when I was debugging or I'd not bother say it):
+```c
+void
+sched_yield(void)
+{
+	struct Env *idle;
+	struct Env *e, *runenv = NULL;
+	int i, cur=0;
+	if (curenv) cur=ENVX(curenv->env_id);
+	else cur = 0;
+	for (i = 0; i < NENV; ++i) {
+		int j = (cur+i) % NENV;
+		if (envs[j].env_status == ENV_RUNNABLE) {
+			if (runenv==NULL || envs[j].pr < runenv->pr) 
+				runenv = envs+j; 
+		}
+	}
+	if (curenv && (curenv->env_status == ENV_RUNNING) && ((runenv==NULL) || (curenv->pr < runenv->pr))) {
+		env_run(curenv);
+	}
+	if (runenv) {
+		env_run(runenv);
+	}
+	sched_halt();
+}
+```
+The priority of a process should be set in the creation by his father process and can be changed by himself, 
+so I added a system call `sys_change_pr(int pr)` to enable modifying of priority, this involve lots of modification in many files and at last one implementation in `kern/syscall.c`:
+```c
+int sys_change_pr(int pr) {
+	curenv->pr = pr;
+	return 0;
+}
+```
+
+I added a new function `pfork` rather than modify the odd one for compatibility with `grade scripts`, every child has a `pr` 0 when it is created to ensure it can run at least one time except there's a very high priority process that has a negative `pr`, then the child process call the system call to change his own `pr` properly:
+```c
+envid_t
+pfork(int pr)
+{
+	set_pgfault_handler(pgfault);
+
+	envid_t envid;
+	uint32_t addr;
+	envid = sys_exofork();
+	if (envid == 0) {
+		thisenv = &envs[ENVX(sys_getenvid())];
+		sys_change_pr(pr);
+		return 0;
+	}
+
+	if (envid < 0)
+		panic("sys_exofork: %e", envid);
+
+	for (addr = 0; addr < USTACKTOP; addr += PGSIZE)
+		if ((uvpd[PDX(addr)] & PTE_P) && (uvpt[PGNUM(addr)] & PTE_P)
+			&& (uvpt[PGNUM(addr)] & PTE_U)) {
+			duppage(envid, PGNUM(addr));
+		}
+
+	if (sys_page_alloc(envid, (void *)(UXSTACKTOP-PGSIZE), PTE_U|PTE_W|PTE_P) < 0)
+		panic("1");
+	extern void _pgfault_upcall();
+	sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
+
+	if (sys_env_set_status(envid, ENV_RUNNABLE) < 0)
+		panic("sys_env_set_status");
+
+	return envid;
+	panic("fork not implemented");
+}
+```
+I changed the `hello.c` to test my implementation:
+```c
+#include <inc/lib.h>
+
+void
+umain(int argc, char **argv)
+{
+	int i;
+	for (i = 1; i <= 5; ++i) {
+		int pid = pfork(i);
+		if (pid == 0) {
+			cprintf("child %x is now living!\n", i);
+			int j;
+			for (j = 0; j < 5; ++j) {
+				cprintf("child %x is yielding!\n", i);
+				sys_yield();
+			}
+			break;
+		}
+	}
+}
+```
+Every time the scheduler runs, the one with lowest priority should be run, and the output meets this rule well and the `grade scripts` still reports `OK` on all tests:
+```
+[00000000] new env 00001000
+envs[0].pr: 0
+[00001000] new env 00001001
+envs[0].pr: 0
+[00001000] new env 00001002
+envs[1].pr: 0
+child 1 is now living!
+child 1 is yielding!
+envs[0].pr: 0
+[00001000] new env 00001003
+envs[1].pr: 1
+envs[2].pr: 0
+child 2 is now living!
+child 2 is yielding!
+envs[0].pr: 0
+envs[1].pr: 1
+envs[1].pr: 1
+envs[2].pr: 2
+envs[0].pr: 0
+[00001000] new env 00001004
+envs[1].pr: 1
+envs[2].pr: 2
+envs[3].pr: 0
+child 3 is now living!
+child 3 is yielding!
+envs[0].pr: 0
+envs[1].pr: 1
+envs[2].pr: 2
+[00001000] new env 00001005
+envs[1].pr: 1
+envs[2].pr: 2
+envs[3].pr: 3
+envs[4].pr: 0
+child 4 is now living!
+child 4 is yielding!
+envs[0].pr: 0
+envs[1].pr: 1
+envs[2].pr: 2
+envs[3].pr: 3
+[00001000] exiting gracefully
+[00001000] free env 00001000
+envs[1].pr: 1
+envs[2].pr: 2
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 0
+child 5 is now living!
+child 5 is yielding!
+envs[1].pr: 1
+envs[2].pr: 2
+envs[3].pr: 3
+envs[4].pr: 4
+child 1 is yielding!
+envs[2].pr: 2
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 5
+envs[1].pr: 1
+child 1 is yielding!
+envs[2].pr: 2
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 5
+envs[1].pr: 1
+child 1 is yielding!
+envs[2].pr: 2
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 5
+envs[1].pr: 1
+child 1 is yielding!
+envs[2].pr: 2
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 5
+envs[1].pr: 1
+[00001001] exiting gracefully
+[00001001] free env 00001001
+envs[2].pr: 2
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 5
+child 2 is yielding!
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 5
+envs[2].pr: 2
+child 2 is yielding!
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 5
+envs[2].pr: 2
+child 2 is yielding!
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 5
+envs[2].pr: 2
+child 2 is yielding!
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 5
+envs[2].pr: 2
+[00001002] exiting gracefully
+[00001002] free env 00001002
+envs[3].pr: 3
+envs[4].pr: 4
+envs[5].pr: 5
+child 3 is yielding!
+envs[4].pr: 4
+envs[5].pr: 5
+envs[3].pr: 3
+child 3 is yielding!
+envs[4].pr: 4
+envs[5].pr: 5
+envs[3].pr: 3
+child 3 is yielding!
+envs[4].pr: 4
+envs[5].pr: 5
+envs[3].pr: 3
+child 3 is yielding!
+envs[4].pr: 4
+envs[5].pr: 5
+envs[3].pr: 3
+[00001003] exiting gracefully
+[00001003] free env 00001003
+envs[4].pr: 4
+envs[5].pr: 5
+child 4 is yielding!
+envs[5].pr: 5
+envs[4].pr: 4
+child 4 is yielding!
+envs[5].pr: 5
+envs[4].pr: 4
+child 4 is yielding!
+envs[5].pr: 5
+envs[4].pr: 4
+child 4 is yielding!
+envs[5].pr: 5
+envs[4].pr: 4
+[00001004] exiting gracefully
+[00001004] free env 00001004
+envs[5].pr: 5
+child 5 is yielding!
+envs[5].pr: 5
+child 5 is yielding!
+envs[5].pr: 5
+child 5 is yielding!
+envs[5].pr: 5
+child 5 is yielding!
+envs[5].pr: 5
+[00001005] exiting gracefully
+[00001005] free env 00001005
+envs[0].env_status: 0
+envs[1].env_status: 0
+No runnable environments in the system!
+Welcome to the JOS kernel monitor!
+Type 'help' for a list of commands.
+blue
+green
+red
+```
+
+
 
 
 Part B: Copy-on-Write Fork
@@ -413,12 +711,152 @@ fork(void)
 }
 ```
 
-Part C
----
 Part C: Preemptive Multitasking and Inter-Process communication (IPC)
+---
+
+Exercise 13
+---
+```
+Exercise 13. Modify kern/trapentry.S and kern/trap.c to initialize the appropriate entries in the IDT and provide handlers for IRQs 0 through 15. Then modify the code in env_alloc() in kern/env.c to ensure that user environments are always run with interrupts enabled.
+```
+Generate 16 entries of funs using a script language (whatever you like, I use python):
+```
+	noec(th32, 32)
+	noec(th33, 33)
+	noec(th34, 34)
+	noec(th35, 35)
+	noec(th36, 36)
+	noec(th37, 37)
+	noec(th38, 38)
+	noec(th39, 39)
+	noec(th40, 40)
+	noec(th41, 41)
+	noec(th42, 42)
+	noec(th43, 43)
+	noec(th44, 44)
+	noec(th45, 45)
+	noec(th46, 46)
+	noec(th47, 47)
+```
+Add a `for` loop in `trap.c` to set up gates:
+```c
+for (i = 0; i < 16; ++i)
+	SETGATE(idt[IRQ_OFFSET+i], 0, GD_KT, funs[IRQ_OFFSET+i], 0);
+```
+And enable `FL_IF` in user env:
+```c
+	e->env_tf.tf_eflags |= FL_IF;
+```
+
+Exercise 14
+---
+```
+Exercise 14. Modify the kernel's trap_dispatch() function so that it calls sched_yield() to find and run a different environment whenever a clock interrupt takes place.
+```
+Trivial:
+```c
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER) {
+		lapic_eoi();
+		sched_yield();
+		return;
+	}
+```
+
+Exercise 15
+---
+```
+Exercise 15. Implement sys_ipc_recv and sys_ipc_try_send in kern/syscall.c. Read the comments on both before implementing them, since they have to work together. When you call envid2env in these routines, you should set the checkperm flag to 0, meaning that any environment is allowed to send IPC messages to any other environment, and the kernel does no special permission checking other than verifying that the target envid is valid.
+
+Then implement the ipc_recv and ipc_send functions in lib/ipc.c.
+```
+Most of code is checking, just follow the guide:
+```c
+static int
+sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
+{
+	struct Env *e;
+	int ret = envid2env(envid, &e, 0);
+	if (ret) return ret;//bad env
+	if (!e->env_ipc_recving) return -E_IPC_NOT_RECV;
+	if (srcva < (void*)UTOP) {
+		pte_t *pte;
+		struct PageInfo *pg = page_lookup(curenv->env_pgdir, srcva, &pte);
+		if (!pg) return -E_INVAL;
+		if ((*pte & perm) != perm) return -E_INVAL;
+		if ((perm & PTE_W) && !(*pte & PTE_W)) return -E_INVAL;
+		if (srcva != ROUNDDOWN(srcva, PGSIZE)) return -E_INVAL;
+		if (e->env_ipc_dstva < (void*)UTOP) {
+			ret = page_insert(e->env_pgdir, pg, e->env_ipc_dstva, perm);
+			if (ret) return ret;
+			e->env_ipc_perm = perm;
+		}
+	}
+	e->env_ipc_recving = 0;
+	e->env_ipc_from = curenv->env_id;
+	e->env_ipc_value = value; 
+	e->env_status = ENV_RUNNABLE;
+	e->env_tf.tf_regs.reg_eax = 0;
+	return 0;
+	panic("sys_ipc_try_send not implemented");
+}
+```
+Trivial:
+```c
+static int
+sys_ipc_recv(void *dstva)
+{
+	if (dstva < (void*)UTOP) 
+		if (dstva != ROUNDDOWN(dstva, PGSIZE)) 
+			return -E_INVAL;
+	curenv->env_ipc_recving = 1;
+	curenv->env_status = ENV_NOT_RUNNABLE;
+	curenv->env_ipc_dstva = dstva;
+	sys_yield();
+	return 0;
+}
+```
+
+(void*)-1 is used to indicate no page:
+```c
+int32_t
+ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
+{
+	// LAB 4: Your code here.
+	if (from_env_store) *from_env_store = 0;
+	if (perm_store) *perm_store = 0;
+	if (!pg) pg = (void*) -1;
+	int ret = sys_ipc_recv(pg);
+	if (ret) return ret;
+	if (from_env_store)
+		*from_env_store = thisenv->env_ipc_from;
+	if (perm_store)
+		*perm_store = thisenv->env_ipc_perm;
+	return thisenv->env_ipc_value;
+}
+```
+
+Use `sys_yield` to make code CPU friendly:
+```c
+void
+ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
+{
+	// LAB 4: Your code here.
+	if (!pg) pg = (void*)-1;
+	int ret;
+	while ((ret = sys_ipc_try_send(to_env, val, pg, perm))) {
+		if (ret == 0) break;
+		if (ret != -E_IPC_NOT_RECV) panic("not E_IPC_NOT_RECV, %e", ret);
+		sys_yield();
+	}
+}
+```
+
+There's something I have to mention here: after I finished the last exercise, I typed `make grade` and passed all tests but got a timeout in the `primes`, I found that this test was executed in a 4-CPU environment, I tried it in a 1-CPU environment and it finished quickly but it was much slower in a 4-CPU environment, I thought maybe it was due to the immatureness of `qemu` (and I were using the official `qemu` rather than the patched one), so I changed the grade time limit from `30s` to `60s` and finally passed all tests.
 
 
 
+This completes the lab.
+===
 
 
 

@@ -341,7 +341,7 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 		pte_t *pte;
 		struct PageInfo *pg = page_lookup(curenv->env_pgdir, srcva, &pte);
 		if (!pg) return -E_INVAL;
-		if ((*pte & perm) != perm) return -E_INVAL;
+		if ((*pte & perm & 7) != (perm & 7)) return -E_INVAL;
 		if ((perm & PTE_W) && !(*pte & PTE_W)) return -E_INVAL;
 		if (srcva != ROUNDDOWN(srcva, PGSIZE)) return -E_INVAL;
 		if (e->env_ipc_dstva < (void*)UTOP) {

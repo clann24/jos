@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<!-- saved from url=(0064)file:///var/folders/4x/p752xljj6yvdxpx5v_qrtld40000gn/T/173.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta charset="utf-8"><style>html { font-size: 100%; overflow-y: scroll; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+
+body{
+  color:#444;
+  font-family:Georgia, Palatino, 'Palatino Linotype', Times, 'Times New Roman',
+              "Hiragino Sans GB", "STXihei", "微软雅黑", serif;
+  font-size:12px;
+  line-height:1.5em;
+  background:#fefefe;
+  width: 45em;
+  margin: 10px auto;
+  padding: 1em;
+  outline: 1300px solid #FAFAFA;
+}
+
+a{ color: #0645ad; text-decoration:none;}
+a:visited{ color: #0b0080; }
+a:hover{ color: #06e; }
+a:active{ color:#faa700; }
+a:focus{ outline: thin dotted; }
+a:hover, a:active{ outline: 0; }
+
+span.backtick {
+  border:1px solid #EAEAEA;
+  border-radius:3px;
+  background:#F8F8F8;
+  padding:0 3px 0 3px;
+}
+
+::-moz-selection{background:rgba(255,255,0,0.3);color:#000}
+::selection{background:rgba(255,255,0,0.3);color:#000}
+
+a::-moz-selection{background:rgba(255,255,0,0.3);color:#0645ad}
+a::selection{background:rgba(255,255,0,0.3);color:#0645ad}
+
+p{
+margin:1em 0;
+}
+
+img{
+max-width:100%;
+}
+
+h1,h2,h3,h4,h5,h6{
+font-weight:normal;
+color:#111;
+line-height:1em;
+}
+h4,h5,h6{ font-weight: bold; }
+h1{ font-size:2.5em; }
+h2{ font-size:2em; border-bottom:1px solid silver; padding-bottom: 5px; }
+h3{ font-size:1.5em; }
+h4{ font-size:1.2em; }
+h5{ font-size:1em; }
+h6{ font-size:0.9em; }
+
+blockquote{
+color:#666666;
+margin:0;
+padding-left: 3em;
+border-left: 0.5em #EEE solid;
+}
+hr { display: block; height: 2px; border: 0; border-top: 1px solid #aaa;border-bottom: 1px solid #eee; margin: 1em 0; padding: 0; }
+
+
+pre , code, kbd, samp { 
+  color: #000; 
+  font-family: monospace; 
+  font-size: 0.88em; 
+  border-radius:3px;
+  background-color: #F8F8F8;
+  border: 1px solid #CCC; 
+}
+pre { white-space: pre; white-space: pre-wrap; word-wrap: break-word; padding: 5px 12px;}
+pre code { border: 0px !important; padding: 0;}
+code { padding: 0 3px 0 3px; }
+
+b, strong { font-weight: bold; }
+
+dfn { font-style: italic; }
+
+ins { background: #ff9; color: #000; text-decoration: none; }
+
+mark { background: #ff0; color: #000; font-style: italic; font-weight: bold; }
+
+sub, sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; }
+sup { top: -0.5em; }
+sub { bottom: -0.25em; }
+
+ul, ol { margin: 1em 0; padding: 0 0 0 2em; }
+li p:last-child { margin:0 }
+dd { margin: 0 0 0 2em; }
+
+img { border: 0; -ms-interpolation-mode: bicubic; vertical-align: middle; }
+
+table { border-collapse: collapse; border-spacing: 0; }
+td { vertical-align: top; }
+
+@media only screen and (min-width: 480px) {
+body{font-size:14px;}
+}
+
+@media only screen and (min-width: 768px) {
+body{font-size:16px;}
+}
+
+@media print {
+  * { background: transparent !important; color: black !important; filter:none !important; -ms-filter: none !important; }
+  body{font-size:12pt; max-width:100%; outline:none;}
+  a, a:visited { text-decoration: underline; }
+  hr { height: 1px; border:0; border-bottom:1px solid black; }
+  a[href]:after { content: " (" attr(href) ")"; }
+  abbr[title]:after { content: " (" attr(title) ")"; }
+  .ir a:after, a[href^="javascript:"]:after, a[href^="#"]:after { content: ""; }
+  pre, blockquote { border: 1px solid #999; padding-right: 1em; page-break-inside: avoid; }
+  tr, img { page-break-inside: avoid; }
+  img { max-width: 100% !important; }
+  @page :left { margin: 15mm 20mm 15mm 10mm; }
+  @page :right { margin: 15mm 10mm 15mm 20mm; }
+  p, h2, h3 { orphans: 3; widows: 3; }
+  h2, h3 { page-break-after: avoid; }
+}
+</style><title>README</title></head><body><h1 id="report-for-lab5-shian-chen">Report for lab5, Shian Chen</h1>
+<blockquote>
+<p>All exercises finished</p>
+<p>Challenges to be challenged</p>
+</blockquote>
+<pre><code>make[1]: Leaving directory `/home/clann/lab'
+internal FS tests: OK (4.9s) 
+  fs i/o: OK 
+  check_super: OK 
+spawn via spawnhello: OK (4.7s) 
+PTE_SHARE [testpteshare]: OK (4.7s) 
+PTE_SHARE [testfdsharing]: OK (4.7s) 
+start the shell [icode]: OK (4.7s) 
+testshell: OK (8.1s) 
+primespipe: OK (16.1s) 
+Score: 75/75
+</code></pre>
+
+<h2 id="exercise-1">Exercise 1</h2>
+<pre><code>Exercise 1. i386_init identifies the file system environment by passing the type ENV_TYPE_FS to your environment creation function, env_create. Modify env_create in env.c, so that it gives the file system environment I/O privilege, but never gives that privilege to any other environment.
+</code></pre>
+
+<p>Trivial:</p>
+<pre><code class="c">    if (type == ENV_TYPE_FS) {
+        penv-&gt;env_type = ENV_TYPE_FS;
+        penv-&gt;env_tf.tf_eflags |= FL_IOPL_MASK;
+    }
+</code></pre>
+
+<p>Question</p>
+<blockquote>
+<p>Do you have to do anything else to ensure that this I/O privilege setting is saved and restored properly when you subsequently switch from one environment to another? Why?</p>
+</blockquote>
+<p>No, it is saved by hardware and restored by <code>iret</code> in <code>env_pop_tf</code>.</p>
+<h2 id="exercise-2">Exercise 2</h2>
+<pre><code>Exercise 2. Implement the bc_pgfault functions in fs/bc.c. bc_pgfault is a page fault handler, just like the one your wrote in the previous lab for copy-on-write fork, except that its job is to load pages in from the disk in response to a page fault. When writing this, keep in mind that (1) addr may not be aligned to a block boundary and (2) ide_read operates in sectors, not blocks.
+</code></pre>
+
+<p>Trivial:</p>
+<pre><code class="c">    addr = ROUNDDOWN(addr, PGSIZE);
+    sys_page_alloc(0, addr, PTE_W|PTE_U|PTE_P);
+    if ((r = ide_read(blockno*BLKSECTS, addr, BLKSECTS)) &lt; 0) 
+        panic("ide_read: %e", r);
+</code></pre>
+
+<h2 id="exercise-3">Exercise 3</h2>
+<pre><code>Exercise 3. spawn relies on the new syscall sys_env_set_trapframe to initialize the state of the newly created environment. Implement sys_env_set_trapframe. Test your code by running the user/spawnhello program from kern/init.c, which will attempt to spawn /hello from the file system.
+</code></pre>
+
+<p>I have really nothing to explain:</p>
+<pre><code class="c">static int
+sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
+{
+    struct Env *e; 
+    int ret = envid2env(envid, &amp;e, 1);
+    if (ret) return ret;
+    user_mem_assert(e, tf, sizeof(struct Trapframe), PTE_U);
+    e-&gt;env_tf = *tf;
+    e-&gt;env_tf.tf_eflags |= FL_IF;
+    e-&gt;env_tf.tf_cs = GD_UT | 3;
+    return 0;
+}
+</code></pre>
+
+<h2 id="exercise-4">Exercise 4</h2>
+<pre><code>Exercise 4. Change duppage in lib/fork.c to follow the new convention. If the page table entry has the PTE_SHARE bit set, just copy the mapping directly. (You should use PTE_SYSCALL, not 0xfff, to mask out the relevant bits from the page table entry. 0xfff picks up the accessed and dirty bits as well.)
+</code></pre>
+
+<p>Just add an <code>if</code> before checking <code>COW</code>:</p>
+<pre><code class="c">static int
+duppage(envid_t envid, unsigned pn)
+{
+    int r;
+    // LAB 4: Your code here.
+    // cprintf("1\n");
+    void *addr = (void*) (pn*PGSIZE);
+    if (uvpt[pn] &amp; PTE_SHARE) {
+        sys_page_map(0, addr, envid, addr, uvpt[pn]&amp;PTE_SYSCALL);
+    } else if ((uvpt[pn] &amp; PTE_W) || (uvpt[pn] &amp; PTE_COW)) {
+        if (sys_page_map(0, addr, envid, addr, PTE_COW|PTE_U|PTE_P) &lt; 0)
+            panic("2");
+        if (sys_page_map(0, addr, 0, addr, PTE_COW|PTE_U|PTE_P) &lt; 0)
+            panic("3");
+    } else sys_page_map(0, addr, envid, addr, PTE_U|PTE_P);
+    // cprintf("2\n");
+    return 0;
+    panic("duppage not implemented");
+}
+</code></pre>
+
+<h2 id="exercise-5">Exercise 5</h2>
+<pre><code>Exercise 5. In your kern/trap.c, call kbd_intr to handle trap IRQ_OFFSET+IRQ_KBD and serial_intr to handle trap IRQ_OFFSET+IRQ_SERIAL.
+</code></pre>
+
+<p>Just dispatch it, and the <code>echo</code> and <code>shell</code> runs well.</p>
+<h2 id="question">Question</h2>
+<blockquote>
+<p>How long approximately did it take you to do this lab?</p>
+</blockquote>
+<p>Less than 5 hours.</p>
+<blockquote>
+<p>We simplified the file system this year with the goal of making more time for the final project. Do you feel like you gained a basic understanding of the file I/O in JOS? Feel free to suggest things we could improve.</p>
+</blockquote>
+<p>Maybe, but I will try to read lab assignments in 2011 to see what I've missed.</p>
+<h1 id="this-completes-the-lab">This completes the lab.</h1></body></html>

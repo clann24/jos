@@ -3,7 +3,7 @@ Report for lab5, Shian Chen
 
 >All exercises finished
 
->Challenges to be challenged
+>One challenge completed
 
 
 ```
@@ -73,6 +73,46 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 }
 ```
 
+Challenge
+---
+```
+Challenge! Implement Unix-style exec.
+```
+It's not easy to implement user-level exec because we can't replace memory in use, so we'd better create a temporary region to read and store infomation we need and employ a system call to finish the replacement job.
+`ETEMP` is defined in `inc/csa.h` as `0xe0000000` indicating the beginning of our temporary region, 
+
+By consulting the implementation of `spawn`, we can easily build the `exec` except we should be aware of the temporary region:
+```c
+	uint32_t tmp = ETEMP;
+	ph = (struct Proghdr*) (elf_buf + elf->e_phoff);
+	for (i = 0; i < elf->e_phnum; i++, ph++) {
+		if (ph->p_type != ELF_PROG_LOAD)
+			continue;
+		perm = PTE_P | PTE_U;
+		if (ph->p_flags & ELF_PROG_FLAG_WRITE)
+			perm |= PTE_W;
+		if ((r = map_segment(0, PGOFF(ph->p_va) + tmp, ph->p_memsz,
+				     fd, ph->p_filesz, ph->p_offset, perm)) < 0)
+			goto error;
+		tmp += ROUNDUP(ph->p_memsz + PGOFF(ph->p_va), PGSIZE);
+	}
+```
+
+Then we need to implement `sys_exec` (the implementation of `load_icode` and `bootmain` is helpful). The `execl` is almost the same as `spawnl`. The `init_stack` should be modified to support the temporary region (or we can implement a new one, but it's not nessesary).
+
+Try `exec hello` and we get:
+```
+i am parent environment 00001001
+superblock is good
+tf_esp: 0
+stack: e007000
+hello, world
+thisenv: eec0007c
+i am environment 00001001
+```
+The last line indicates the env_id of `hello` is `00001001` (not `00001002`), so the implementation succeeds.
+
+
 Exercise 4
 ---
 ```
@@ -112,7 +152,7 @@ Question
 ---
 >How long approximately did it take you to do this lab?
 
-Less than 5 hours.
+Less than 5 hours for the exercises, 10 hours for the challenge.
 
 >We simplified the file system this year with the goal of making more time for the final project. Do you feel like you gained a basic understanding of the file I/O in JOS? Feel free to suggest things we could improve.
 

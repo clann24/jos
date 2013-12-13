@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0064)file:///var/folders/4x/p752xljj6yvdxpx5v_qrtld40000gn/T/173.html -->
+<!-- saved from url=(0063)file:///var/folders/9x/rnj5fhss6xb1plvmqfb_5cfc0000gn/T/52.html -->
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta charset="utf-8"><style>html { font-size: 100%; overflow-y: scroll; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
 
 body{
@@ -125,7 +125,7 @@ body{font-size:16px;}
 </style><title>README</title></head><body><h1 id="report-for-lab5-shian-chen">Report for lab5, Shian Chen</h1>
 <blockquote>
 <p>All exercises finished</p>
-<p>Challenges to be challenged</p>
+<p>One challenge completed</p>
 </blockquote>
 <pre><code>make[1]: Leaving directory `/home/clann/lab'
 internal FS tests: OK (4.9s) 
@@ -186,6 +186,40 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 }
 </code></pre>
 
+<h2 id="challenge">Challenge</h2>
+<pre><code>Challenge! Implement Unix-style exec.
+</code></pre>
+
+<p>It's not easy to implement user-level exec because we can't replace memory in use, so we'd better create a temporary region to read and store infomation we need and employ a system call to finish the replacement job.
+<code>ETEMP</code> is defined in <code>inc/csa.h</code> as <code>0xe0000000</code> indicating the beginning of our temporary region, </p>
+<p>By consulting the implementation of <code>spawn</code>, we can easily build the <code>exec</code> except we should be aware of the temporary region:</p>
+<pre><code class="c">    uint32_t tmp = ETEMP;
+    ph = (struct Proghdr*) (elf_buf + elf-&gt;e_phoff);
+    for (i = 0; i &lt; elf-&gt;e_phnum; i++, ph++) {
+        if (ph-&gt;p_type != ELF_PROG_LOAD)
+            continue;
+        perm = PTE_P | PTE_U;
+        if (ph-&gt;p_flags &amp; ELF_PROG_FLAG_WRITE)
+            perm |= PTE_W;
+        if ((r = map_segment(0, PGOFF(ph-&gt;p_va) + tmp, ph-&gt;p_memsz,
+                     fd, ph-&gt;p_filesz, ph-&gt;p_offset, perm)) &lt; 0)
+            goto error;
+        tmp += ROUNDUP(ph-&gt;p_memsz + PGOFF(ph-&gt;p_va), PGSIZE);
+    }
+</code></pre>
+
+<p>Then we need to implement <code>sys_exec</code> (the implementation of <code>load_icode</code> and <code>bootmain</code> is helpful). The <code>execl</code> is almost the same as <code>spawnl</code>. The <code>init_stack</code> should be modified to support the temporary region (or we can implement a new one, but it's not nessesary).</p>
+<p>Try <code>exec hello</code> and we get:</p>
+<pre><code>i am parent environment 00001001
+superblock is good
+tf_esp: 0
+stack: e007000
+hello, world
+thisenv: eec0007c
+i am environment 00001001
+</code></pre>
+
+<p>The last line indicates the env_id of <code>hello</code> is <code>00001001</code> (not <code>00001002</code>), so the implementation succeeds.</p>
 <h2 id="exercise-4">Exercise 4</h2>
 <pre><code>Exercise 4. Change duppage in lib/fork.c to follow the new convention. If the page table entry has the PTE_SHARE bit set, just copy the mapping directly. (You should use PTE_SYSCALL, not 0xfff, to mask out the relevant bits from the page table entry. 0xfff picks up the accessed and dirty bits as well.)
 </code></pre>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0063)file:///var/folders/9x/rnj5fhss6xb1plvmqfb_5cfc0000gn/T/45.html -->
+<!-- saved from url=(0063)file:///var/folders/9x/rnj5fhss6xb1plvmqfb_5cfc0000gn/T/56.html -->
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta charset="utf-8"><style>html { font-size: 100%; overflow-y: scroll; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
 
 body{
@@ -128,7 +128,7 @@ body{font-size:16px;}
 <li>The jos Semaphore Implementation</li>
 </ul>
 <h2 id="the-linux-3121-pv-implementation">The Linux (3.12.1) P/V Implementation</h2>
-<p>Linux提供的用于支持信号量的系统调用如下:
+<p>Linux提供的用于支持信号量的系统调用如下
 include/linux/syscalls.h:</p>
 <pre><code class="c">asmlinkage long sys_semget(key_t key, int nsems, int semflg);
 asmlinkage long sys_semop(int semid, struct sembuf __user *sops,
@@ -152,11 +152,11 @@ struct semaphore {
 <p>等待队列是一个双向链表
 include/linux/types.h:</p>
 <pre><code class="c">struct list_head {
-    struct list_head *next, *prev;  
+    struct list_head *next, *prev;  //只有next和prev指针
 };
 </code></pre>
 
-<p>信号量初始化宏也印证了我们的想法
+<p>信号量初始化宏
 include/linux/semaphore.h:</p>
 <pre><code class="c">#define __SEMAPHORE_INITIALIZER(name, n)                \
 {                                   \
@@ -166,7 +166,7 @@ include/linux/semaphore.h:</p>
 }
 </code></pre>
 
-<p>主要的操作由自旋锁<code>sem-&gt;lock</code>保护，按照PV的语义它可能会block，但是这个锁排斥了所有的进程，所以势必在block的时候要释放这个锁，那释放之后呢，PV的语义如何保持？
+<p>主要的操作由自旋锁<code>sem-&gt;lock</code>保护，按照PV的语义它可能会block，但是这个锁排斥了所有的进程，而且处于积极等待，所以势必在block的时候要释放这个锁，那释放之后呢，PV的语义如何保持？
 kernel/semaphore.c:</p>
 <pre><code class="c">void down(struct semaphore *sem)
 {
@@ -179,8 +179,9 @@ kernel/semaphore.c:</p>
         __down(sem);    //信号量不够，进入等待队列
     raw_spin_unlock_irqrestore(&amp;sem-&gt;lock, flags);
 }
+</code></pre>
 
-void up(struct semaphore *sem)
+<pre><code class="c">void up(struct semaphore *sem)
 {
     unsigned long flags;
 
@@ -193,7 +194,6 @@ void up(struct semaphore *sem)
 }
 </code></pre>
 
-<p>答案是由操作系统来保证，只有操作系统的配合，才能使PV的语义得以实现。</p>
 <p><code>__down_common</code>的实现如下。由于这是个inline函数，且参数<code>state</code>、<code>timeout</code>都是常量，所以他们会被编译器优化掉(optimized away)。</p>
 <p>kernel/semaphore.c:</p>
 <pre><code class="c">struct semaphore_waiter {
@@ -216,9 +216,9 @@ static inline int __sched __down_common(struct semaphore *sem, long state,
             goto interrupted;
         if (unlikely(timeout &lt;= 0))     //超时
             goto timed_out;
-        __set_task_state(task, state);      //改变当前task的状态为休眠
+        __set_task_state(task, state);      //改变当前task的状态为休眠，进入消极等待
         raw_spin_unlock_irq(&amp;sem-&gt;lock);    //释放锁
-        timeout = schedule_timeout(timeout);    //调用CFS schedule，从而放弃治疗
+        timeout = schedule_timeout(timeout);    //调用CFS schedule，注意我们已经在内核态
         raw_spin_lock_irq(&amp;sem-&gt;lock);
         if (waiter.up)              //P返回
             return 0;
@@ -258,9 +258,9 @@ static inline int __sched __down_common(struct semaphore *sem, long state,
 }
 </code></pre>
 
-<p>所以我们可以发现，spinlock可以任意实现，P/V需要操作系统实现，而据说monitor是由编译器来实现。</p>
+<p>所以P/V操作确实是通过改变进程状态来实现消极等待的。</p>
 <h2 id="_1">花絮</h2>
-<p>发现远古时代的Linus和某人吵架的记录，关于recursive/non-recursive lock：</p>
+<p>发现远古生物Linus和某人吵架的记录，关于recursive/non-recursive lock：</p>
 <pre><code>From: Linus Torvalds &lt;torvalds@linux-foundation.org&gt;
 Newsgroups: fa.linux.kernel
 Subject: Re: [PATCH] netfilter: use per-CPU recursive lock {XV}
@@ -316,8 +316,8 @@ struct semaphore {
 int sem_n;
 </code></pre>
 
-<p>增加系统调用<code>sys_pv</code>，用来实现N、P、V，N为请求一个semaphore，。
-直接利用系统的spinlock来为对每个semaphore进行保护。</p>
+<p>增加系统调用<code>sys_pv</code>，用来实现N、P、V，N为请求一个semaphore。
+直接利用jos kernel的spinlock来为对每个semaphore进行保护。</p>
 <pre><code class="c">int sys_pv(uint32_t a1, uint32_t a2) {
     if (a1 == CONST_NEW) {
         //返回 semaphore id

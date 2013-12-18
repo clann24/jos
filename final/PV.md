@@ -6,7 +6,7 @@
 ## The Linux (3.12.1) P/V Implementation
 
 
-Linux提供的用于支持信号量的系统调用如下:
+Linux提供的用于支持信号量的系统调用如下
 include/linux/syscalls.h:
 ```c
 asmlinkage long sys_semget(key_t key, int nsems, int semflg);
@@ -33,11 +33,11 @@ struct semaphore {
 include/linux/types.h:
 ```c
 struct list_head {
-	struct list_head *next, *prev;	
+	struct list_head *next, *prev;	//只有next和prev指针
 };
 ```
 
-信号量初始化宏也印证了我们的想法
+信号量初始化宏
 include/linux/semaphore.h:
 ```c
 #define __SEMAPHORE_INITIALIZER(name, n)				\
@@ -48,7 +48,7 @@ include/linux/semaphore.h:
 }
 ```
 
-主要的操作由自旋锁`sem->lock`保护，按照PV的语义它可能会block，但是这个锁排斥了所有的进程，所以势必在block的时候要释放这个锁，那释放之后呢，PV的语义如何保持？
+主要的操作由自旋锁`sem->lock`保护，按照PV的语义它可能会block，但是这个锁排斥了所有的进程，而且处于积极等待，所以势必在block的时候要释放这个锁，那释放之后呢，PV的语义如何保持？
 kernel/semaphore.c:
 ```c
 void down(struct semaphore *sem)
@@ -62,7 +62,8 @@ void down(struct semaphore *sem)
 		__down(sem);	//信号量不够，进入等待队列
 	raw_spin_unlock_irqrestore(&sem->lock, flags);
 }
-
+```
+```c
 void up(struct semaphore *sem)
 {
 	unsigned long flags;
@@ -75,7 +76,6 @@ void up(struct semaphore *sem)
 	raw_spin_unlock_irqrestore(&sem->lock, flags);
 }
 ```
-答案是由操作系统来保证，只有操作系统的配合，才能使PV的语义得以实现。
 
 
 `__down_common`的实现如下。由于这是个inline函数，且参数`state`、`timeout`都是常量，所以他们会被编译器优化掉(optimized away)。
@@ -102,9 +102,9 @@ static inline int __sched __down_common(struct semaphore *sem, long state,
 			goto interrupted;
 		if (unlikely(timeout <= 0))		//超时
 			goto timed_out;
-		__set_task_state(task, state);		//改变当前task的状态为休眠
+		__set_task_state(task, state);		//改变当前task的状态为休眠，进入消极等待
 		raw_spin_unlock_irq(&sem->lock);	//释放锁
-		timeout = schedule_timeout(timeout);	//调用CFS schedule，从而放弃治疗
+		timeout = schedule_timeout(timeout);	//调用CFS schedule，注意我们已经在内核态
 		raw_spin_lock_irq(&sem->lock);
 		if (waiter.up)				//P返回
 			return 0;
@@ -147,12 +147,12 @@ static noinline void __sched __up(struct semaphore *sem)
 }
 ```
 
-所以我们可以发现，spinlock可以任意实现，P/V需要操作系统实现，而据说monitor是由编译器来实现。
+所以P/V操作确实是通过改变进程状态来实现消极等待的。
 
 花絮
 ---
 
-发现远古时代的Linus和某人吵架的记录，关于recursive/non-recursive lock：
+发现远古生物Linus和某人吵架的记录，关于recursive/non-recursive lock：
 ```
 From: Linus Torvalds <torvalds@linux-foundation.org>
 Newsgroups: fa.linux.kernel
@@ -221,8 +221,8 @@ struct semaphore {
 int sem_n;
 ```
 
-增加系统调用`sys_pv`，用来实现N、P、V，N为请求一个semaphore，。
-直接利用系统的spinlock来为对每个semaphore进行保护。
+增加系统调用`sys_pv`，用来实现N、P、V，N为请求一个semaphore。
+直接利用jos kernel的spinlock来为对每个semaphore进行保护。
 ```c
 int sys_pv(uint32_t a1, uint32_t a2) {
 	if (a1 == CONST_NEW) {

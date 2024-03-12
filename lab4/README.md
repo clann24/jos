@@ -196,7 +196,7 @@ Because the kernel part of vm of all environments are identical.
 
 >Whenever the kernel switches from one environment to another, it must ensure the old environment's registers are saved so they can be restored properly later. Why? Where does this happen?
 
-Obviouly `curenv->env_tf = *tf;` in `trap.c` saves the current trap frame.
+Obviously `curenv->env_tf = *tf;` in `trap.c` saves the current trap frame.
 
 Exercise 7
 ---
